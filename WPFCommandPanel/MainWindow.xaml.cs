@@ -22,6 +22,7 @@ namespace WPFCommandPanel
     public partial class MainWindow : Window
     {
         public static MainWindow AppWindow;
+        public static CommandPanel CommandPanelObj;
         public MainWindow()
         {
             InitializeComponent();
@@ -41,7 +42,8 @@ namespace WPFCommandPanel
             }
             else
             {
-                ShowPage.Navigate(new CommandPanel());
+                CommandPanelObj = new CommandPanel();
+                ShowPage.Navigate(CommandPanelObj);
             }
         }
     }

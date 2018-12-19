@@ -7,10 +7,14 @@
         mc:Ignorable="d"
         Title="A11yControlPanel" 
         Height="850" 
-        Width="800">
+        Width="800"
+        Background="Black"
+        Style="{StaticResource CustomWindowStyle}"
+        >
     <Window.Resources>
+        
     </Window.Resources>
-
+    
     <Frame Name="ShowPage" 
            NavigationUIVisibility="Hidden"/>
 

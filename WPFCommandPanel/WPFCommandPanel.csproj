@@ -67,6 +67,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ControlDoubleClickBehavior.cs" />
+    <Compile Include="ShowSystemMenuBehavior.cs" />
+    <Compile Include="SystemMenuManager.cs" />
+    <Compile Include="WindowResizeBehavior.cs" />
+    <Compile Include="WindowMaximizeCommand.cs" />
+    <Compile Include="WindowMinimizeCommand.cs" />
+    <Compile Include="WindowCloseCommand.cs" />
+    <Compile Include="WindowDragBehavior.cs" />
     <Page Include="CommandPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
