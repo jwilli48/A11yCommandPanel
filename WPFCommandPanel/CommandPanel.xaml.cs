@@ -323,11 +323,21 @@ namespace WPFCommandPanel
 
                     wait.Until(c => c.FindElement(By.CssSelector("a[class*='edit']")));
                     chrome.FindElementByCssSelector("a[class='home']").Click();
+                    if (QuitThread)
+                    {
+                        QuitThread = false;
+                        return;
+                    }
                 }
                 catch
                 {
                     try
                     {
+                        if (QuitThread)
+                        {
+                            QuitThread = false;
+                            return;
+                        }
                         chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
                         if (chrome.Url.Contains("quiz"))
                         {
@@ -349,6 +359,11 @@ namespace WPFCommandPanel
                             chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
                             wait.Until(c => c.FindElement(By.CssSelector("button.submit"))).Click();
                         }
+                        if (QuitThread)
+                        {
+                            QuitThread = false;
+                            return;
+                        }
                         wait.Until(c => c.FindElement(By.CssSelector("a[class*='edit']")));
                         chrome.FindElementByCssSelector("a[class='home']").Click();
                     }
@@ -356,6 +371,11 @@ namespace WPFCommandPanel
                     {
                         try
                         {
+                            if (QuitThread)
+                            {
+                                QuitThread = false;
+                                return;
+                            }
                             chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
                             Console.WriteLine($"Failed to save page: {chrome.Url}");
                             chrome.FindElementsByCssSelector("a[class='home']")[0].Click();
@@ -364,12 +384,22 @@ namespace WPFCommandPanel
                         {
                             try
                             {
+                                if (QuitThread)
+                                {
+                                    QuitThread = false;
+                                    return;
+                                }
                                 chrome.FindElementsByCssSelector("span.ui-icon-closethick").First(c => c.Text == "close").Click();
 
                                 chrome.FindElementsByCssSelector("a[class='home']")[0].Click();
                             }
                             catch
                             {
+                                if (QuitThread)
+                                {
+                                    QuitThread = false;
+                                    return;
+                                }
                                 Console.WriteLine("Probably at home page...");
                                 try
                                 {
@@ -563,7 +593,10 @@ namespace WPFCommandPanel
                 }
             }
         }
-
+        private void ReviewPage_Click(object sender, EventArgs e)
+        {
+            //Get current page HTML and review it... or just run it from the dom (should use a background worker as well).
+        }
         private void ClearButton_Click(object sender, EventArgs e)
         {
             TerminalOutput.Text = "";
