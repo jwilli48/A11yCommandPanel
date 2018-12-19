@@ -30,10 +30,15 @@ namespace WPFCommandPanel
     /// </summary>
     public partial class CommandPanel : Page
     {
+        //Will watch the folder that will contain the reports
         public FileSystemWatcher FileWatcher = new FileSystemWatcher(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\ReportGenerators-master\Reports");
+        //Collection of FileDisplay objects that will be displayed in the panel
         public ObservableCollection<FileDisplay> file_paths = new AsyncObservableCollection<FileDisplay>();
+        //Allows the program to control a single browser through multiple events and commands
         public ChromeDriver chrome;
         public WebDriverWait wait;
+        public bool QuitThread = false;
+        //Class to work best with the Listbox and FileSystemWatcher together.
         public class AsyncObservableCollection<T> : ObservableCollection<T>
         {
             //Solution to :
@@ -90,8 +95,8 @@ namespace WPFCommandPanel
                 base.OnPropertyChanged((PropertyChangedEventArgs)param);
             }
         }
-        
 
+        //Container for file info to be displayed
         public class FileDisplay
         {
             public FileDisplay(string path)
@@ -103,6 +108,7 @@ namespace WPFCommandPanel
             public string FullName { get; set; }
 
         }
+        //Object to control console output / put it into the terminal on the command panel
         public class ControlWriter : TextWriter
         {
             private TextBlock terminal;
@@ -113,7 +119,7 @@ namespace WPFCommandPanel
 
             public override void Write(char value)
             {
-                if(value == '\n')
+                if (value == '\n')
                 {
                     return;
                 }
@@ -138,26 +144,30 @@ namespace WPFCommandPanel
                 get { return Encoding.UTF8; }
             }
         }
+        //Init
         public CommandPanel()
         {
             InitializeComponent();
-
+            //Set all console output to our own writer
             Console.SetOut(new ControlWriter(TerminalOutput));
+            //Setup the events for the filewatcher
             this.FileWatcher.EnableRaisingEvents = true;
             this.FileWatcher.Created += new System.IO.FileSystemEventHandler(this.FileWatcher_Created);
             this.FileWatcher.Deleted += new System.IO.FileSystemEventHandler(this.FileWatcher_Deleted);
             this.FileWatcher.Renamed += new System.IO.RenamedEventHandler(this.FileWatcher_Renamed);
-
+            //Init the listbox / file_paths container
             foreach (var d in new DirectoryInfo(FileWatcher.Path).GetFiles("*.xlsx"))
             {
                 file_paths.Add(new FileDisplay(d.FullName));
             }
+            //Setup the listbox
             ReportList.ItemsSource = file_paths;
             ReportList.DisplayMemberPath = "DisplayName";
             ReportList.SelectedValuePath = "FullName";
         }
         private void FileWatcher_Created(object sender, System.IO.FileSystemEventArgs e)
         {
+            //If a file is created that is an excel doc we want to display it
             if (!e.FullPath.Contains(".xlsx"))
             {
                 return;
@@ -166,6 +176,7 @@ namespace WPFCommandPanel
         }
         public void FileWatcher_Deleted(object sender, System.IO.FileSystemEventArgs e)
         {
+            //Remove any excel docs from the list if they were deleted
             if (!e.FullPath.Contains(".xlsx"))
             {
                 return;
@@ -174,6 +185,7 @@ namespace WPFCommandPanel
         }
         public void FileWatcher_Renamed(object sender, System.IO.RenamedEventArgs e)
         {
+            //If it was renamed we need to delete old one and create new one with new path
             if (!e.FullPath.Contains(".xlsx"))
             {
                 return;
@@ -183,8 +195,17 @@ namespace WPFCommandPanel
         }
         public void OpenBrowserButton(object sender, EventArgs e)
         {
-            chrome = new ChromeDriver(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
-            wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.DoWork += OpenBrowser;
+            worker.RunWorkerAsync();
+
+        }
+        private void OpenBrowser(object sender, DoWorkEventArgs e)
+        {
+            //Open the browser to be controlled
+            this.chrome = new ChromeDriver(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+            this.wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
         }
         private void Canvas_Click(object sender, EventArgs e)
         {
@@ -200,33 +221,185 @@ namespace WPFCommandPanel
         {
             chrome.Url = "https://byuistest.instructure.com";
         }
+        private void QuitProcess(object sender, EventArgs e)
+        {
+            QuitThread = true;
+        }
         private void Ralt_Click(object sender, EventArgs e)
         {
-            using (PowerShell posh = PowerShell.Create())
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+
+
+            if (chrome?.Url?.Contains("instruct") == true)
             {
-                string path;
-                if (chrome?.Url?.Contains("instruct") == true)
+                worker.DoWork += CanvasRalt;
+            } else if (chrome?.Url?.Contains("agilix") == true)
+            {
+                worker.DoWork += BuzzRalt;
+            }
+            else
+            {
+                MessageBox.Show("Not on a valid URL");
+                return;
+            }
+            worker.RunWorkerAsync();
+        }
+        public class PoshHelper
+        {
+            public PoshHelper(ChromeDriver d, int s)
+            {
+                driver = d;
+                i = s;
+            }
+            public ChromeDriver driver;
+            public int i;
+        }
+        private void CanvasRalt(object sender, DoWorkEventArgs e)
+        {
+            var number_of_modules = chrome.FindElementsByClassName("item_name").Count(c => c.Text != "");
+            for (int i = 0; i < number_of_modules; i++)
+            {
+                if (QuitThread)
                 {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\QuickScripts\canvasReplaceAlt.ps1";
-                }else if (chrome?.Url?.Contains("agilix") == true)
-                {
-                    path = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\QuickScripts\buzzReplaceAlt.ps1";
-                }
-                else
-                {
-                    MessageBox.Show("Not on a valid URL");
+                    QuitThread = false;
                     return;
                 }
-                string script = File.ReadAllText(path);
-                posh.AddScript(script);
-                Collection<PSObject> results = posh.Invoke();
+                try
+                {
+                    wait.Until(c => c.FindElement(By.ClassName("item_name")));
+                    chrome.FindElementsByClassName("item_name")[i].Click();
+                    /*
+                    PowerShell helper = PowerShell.Create();
+                    helper.AddScript("param($c)\n" +
+                        "process{" +
+                        "($c.Driver.FindElementsByClassname(\"item_name\") | Select-Object -Index $c.i).click()" +
+                        "}").AddArgument(new PoshHelper(this.chrome, i));
+                    var job = helper.BeginInvoke();
+                    for(var j = 0; j < 500; j++)
+                    {
+                        if (job.IsCompleted)
+                        {
+                            break;
+                        }
+                        if(j >= 450)
+                        {
+                            
+                        }
+                    }*/
+                    wait.Until(c => c.FindElement(By.CssSelector("a[class*=\"edit\""))).Click();
+                    if (chrome.Url.Contains("quiz"))
+                    {
+                        wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("quiz_description_ifr"))));
+                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
+                        chrome.SwitchTo().ParentFrame();
+                        chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                        wait.Until(c => c.FindElement(By.CssSelector("button.save_quiz_button"))).Click();
+                    }
+                    else if (chrome.Url.Contains("assignment"))
+                    {
+                        wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("assignment_description_ifr"))));
+                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
+                        chrome.SwitchTo().ParentFrame();
+                        chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                        wait.Until(c => c.FindElement(By.CssSelector("button.btn.btn-primary"))).Click();
+                    }
+                    else if (chrome.Url.Contains("discussion"))
+                    {
+                        wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("discussion-topic-message9_ifr"))));
+                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
+                        chrome.SwitchTo().ParentFrame();
+                        chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                        wait.Until(c => c.FindElement(By.CssSelector("[data-text-while-loading]"))).Click();
+                    }
+                    else
+                    {
+                        wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("wiki_page_body_ifr"))));
+                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
+                        chrome.SwitchTo().ParentFrame();
+                        chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                        wait.Until(c => c.FindElement(By.CssSelector("button.submit"))).Click();
+                    }
+
+                    wait.Until(c => c.FindElement(By.CssSelector("a[class*='edit']")));
+                    chrome.FindElementByCssSelector("a[class='home']").Click();
+                }
+                catch
+                {
+                    try
+                    {
+                        chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
+                        if (chrome.Url.Contains("quiz"))
+                        {
+                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                            wait.Until(c => c.FindElement(By.CssSelector("button.save_quiz_button"))).Click();
+                        }
+                        else if (chrome.Url.Contains("assignment"))
+                        {
+                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                            wait.Until(c => c.FindElement(By.CssSelector("button.btn.btn-primary"))).Click();
+                        }
+                        else if (chrome.Url.Contains("discussion"))
+                        {
+                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                            wait.Until(c => c.FindElement(By.CssSelector("[data-text-while-loading]"))).Click();
+                        }
+                        else
+                        {
+                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
+                            wait.Until(c => c.FindElement(By.CssSelector("button.submit"))).Click();
+                        }
+                        wait.Until(c => c.FindElement(By.CssSelector("a[class*='edit']")));
+                        chrome.FindElementByCssSelector("a[class='home']").Click();
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
+                            Console.WriteLine($"Failed to save page: {chrome.Url}");
+                            chrome.FindElementsByCssSelector("a[class='home']")[0].Click();
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                chrome.FindElementsByCssSelector("span.ui-icon-closethick").First(c => c.Text == "close").Click();
+
+                                chrome.FindElementsByCssSelector("a[class='home']")[0].Click();
+                            }
+                            catch
+                            {
+                                Console.WriteLine("Probably at home page...");
+                                try
+                                {
+                                    wait.Until(c => c.SwitchTo().Alert()).Accept();
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("Its broken, sorry");
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+        private void BuzzRalt(object sender, DoWorkEventArgs e)
+        {
 
+        }
         private void Login_Click(object sender, EventArgs e)
-        {    
+        {
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.DoWork += LoginToByu;
+            worker.RunWorkerAsync();
+        }
+        private void LoginToByu(object sender, DoWorkEventArgs e)
+        {
             string username = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\Credentials\MyByuUserName.txt").Replace("\n", "").Replace("\r", "");
-            
+
             var posh = PowerShell.Create();
             posh.AddScript("process{$c = Get-Content \"$HOME\\Desktop\\AccessibilityTools\\Credentials\\MyByuPassword.txt\"; $s = $c | ConvertTo-SecureString; Write-Host (New-Object System.Management.Automation.PSCredential -ArgumentList 'asdf', $s).GetNetworkCredential().Password}"
                 );
@@ -247,7 +420,10 @@ namespace WPFCommandPanel
                 chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
             }
         }
-        
+        private void A11yHelp_Click(object sender, EventArgs e)
+        {
+
+        }
         private void GenerateReport_Click(object sender, EventArgs e)
         {
             BackgroundWorker worker = new BackgroundWorker();
