@@ -38,6 +38,20 @@ namespace WPFCommandPanel
         public ChromeDriver chrome;
         public WebDriverWait wait;
         public bool QuitThread = false;
+        
+        public class PageReviewer
+        {
+            public PageReviewer()
+            {
+                A11yReviewer = new A11yParser();
+                MediaReviewer = new MediaParser();
+                LinkReviewer = new LinkParser();
+            }
+            public A11yParser A11yReviewer { get; set; }
+            public MediaParser MediaReviewer { get; set; }
+            public LinkParser LinkReviewer { get; set; }
+        }
+        public PageReviewer PageParser;
         //Class to work best with the Listbox and FileSystemWatcher together.
         public class AsyncObservableCollection<T> : ObservableCollection<T>
         {
@@ -164,6 +178,8 @@ namespace WPFCommandPanel
             ReportList.ItemsSource = file_paths;
             ReportList.DisplayMemberPath = "DisplayName";
             ReportList.SelectedValuePath = "FullName";
+
+            PageParser = new PageReviewer();
         }
         private void FileWatcher_Created(object sender, System.IO.FileSystemEventArgs e)
         {
@@ -417,7 +433,149 @@ namespace WPFCommandPanel
         }
         private void BuzzRalt(object sender, DoWorkEventArgs e)
         {
+            if (QuitThread)
+            {
+                QuitThread = false;
+                return;
+            }
+            //Get number of modules
+            var number_of_modules = chrome.FindElementsByCssSelector("button[class*=\"glyphicon-option\"]").Count();
+            for(int i = 0; i < number_of_modules; i++)
+            {
+                if (QuitThread)
+                {
+                    QuitThread = false;
+                    return;
+                }
+                try
+                {
+                    //Open moudle options
+                    wait.Until(c => c.FindElement(By.CssSelector("button[class*=\"glyphicon-option\"]")).Displayed);
+                    chrome.FindElementsByCssSelector("button[class*=\"glyphicon-option\"]")[i].Click();
+                    //Wait for edit button to show up and click displayed one
+                    wait.Until(c => {
+                        var els = c.FindElements(By.LinkText("Edit"));
+                        if (els.Select(el => el.Displayed).Count() > 0)
+                        {
+                            return els.Where(el => el.Displayed).First();
+                        } else
+                        {
+                            return null;
+                        }});
+                    if (QuitThread)
+                    {
+                        QuitThread = false;
+                        return;
+                    }
+                    //Get image
+                    var image = wait.Until(c => c.FindElement(By.CssSelector("img[class*='fr-draggable']")));
+                    //Clear title if it exists
+                    if("" != image.GetAttribute("title") && null != image.GetAttribute("title"))
+                    {
+                        chrome.ExecuteScript("document.querySelector(\"img[class*='fr-draggable']\").setAttribute('title',''));");
+                    }
+                    //Enter image options
+                    image.Click();
+                    //Wait for button to edit alt text shows up
+                    wait.Until(c =>
+                    {
+                        var el = c.FindElement(By.CssSelector("button[id*='imageAlt']"));
+                        if (el.Displayed)
+                        {
+                            return el;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }).Click();
+                    if (QuitThread)
+                    {
+                        QuitThread = false;
+                        return;
+                    }
+                    //Clear the text field
+                    wait.Until(c =>
+                    {
+                        var el = c.FindElement(By.CssSelector("input[placeholder*=\"Alternative\"])"));
+                        if (el.Displayed)
+                        {
+                            return el;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }).Clear();
 
+                    //Update alt text
+                    chrome.FindElementsByTagName("button").Where(el => el.Text == "Update").First().Click();
+                    //Save page
+                    chrome.FindElementsByTagName("button").Where(el => el.Text == "Save").First().Click();
+                    try
+                    {
+                        if (QuitThread)
+                        {
+                            QuitThread = false;
+                            return;
+                        }
+                        //Check for pop up
+                        wait.Timeout = new TimeSpan(0, 0, 1);
+                        wait.Until(c =>
+                        {
+                            return c.FindElement(By.CssSelector("mat-dialog-container"));
+                        }).FindElements(By.CssSelector("button.mat-button.mat-primary")).First().Click();
+                        wait.Timeout = new TimeSpan(0, 0, 3);
+                        //Try to then leave page
+                        chrome.FindElementsByTagName("button")
+                            .Where(el => el.Text.Contains("Clear"))
+                            .First()
+                            .Click();
+                        //May ask "are you sure"
+                        chrome.FindElementsByCssSelector("span.mat-button-wrapper")
+                            .Where(el => el.Text.Contains("LEAVE"))
+                            .First()
+                            .Click();
+                    }
+                    catch
+                    {
+                        //Silently error since this should mean there is no popup
+                    }
+                }
+                catch
+                {
+                    Console.WriteLine("Nothing Found");
+                    chrome.FindElementsByTagName("button").Where(el => el.Text.Contains("Save")).First().Click();
+                    try
+                    {
+                        if (QuitThread)
+                        {
+                            QuitThread = false;
+                            return;
+                        }
+                        wait.Timeout = new TimeSpan(0, 0, 1);
+                        wait.Until(c =>
+                        {
+                            return c.FindElement(By.CssSelector("mat-dialog-container"));
+                        }).FindElements(By.CssSelector("button.mat-button.mat-primary")).First().Click();
+                        wait.Timeout = new TimeSpan(0, 0, 3);
+                        //Try to then leave page
+                        chrome.FindElementsByTagName("button")
+                            .Where(el => el.Text.Contains("Clear"))
+                            .First()
+                            .Click();
+                        //May ask "are you sure"
+                        chrome.FindElementsByCssSelector("span.mat-button-wrapper")
+                            .Where(el => el.Text.Contains("LEAVE"))
+                            .First()
+                            .Click();
+                    }
+                    catch
+                    {
+                        //Silently error since this should mean there is no popup
+                    }
+                }
+            }
         }
         private void Login_Click(object sender, EventArgs e)
         {
@@ -521,6 +679,11 @@ namespace WPFCommandPanel
                 ?.ToString();
                 return domain;
             });
+            if (QuitThread)
+            {
+                QuitThread = false;
+                return;
+            }
             if (checkedDomain == null)
             {
                 this.Dispatcher.Invoke(() =>
@@ -542,7 +705,13 @@ namespace WPFCommandPanel
                 return;
             }
             CanvasApi.ChangeDomain(checkedDomain);
+            if (QuitThread)
+            {
+                QuitThread = false;
+                return;
+            }
             CourseInfo course;
+            bool directory = false;
             if (int.TryParse(text, out int id))
             {
                 //It is an ID, create course info with new id var
@@ -552,16 +721,33 @@ namespace WPFCommandPanel
             {
                 //Just send it in as a string path
                 course = new CourseInfo(text);
+                directory = true;
             }
-            
+            if (QuitThread)
+            {
+                QuitThread = false;
+                return;
+            }
             //Code to run report... (need to copy / add ReportGenerator code or move this project to ReportGenerator solution and use this as the executable.
             A11yParser ParseForA11y = new A11yParser();
+            MediaParser ParseForMedia = new MediaParser();
+            LinkParser ParseForLinks = new LinkParser();
             foreach (var page in course.PageHtmlList)
             {
                 ParseForA11y.ProcessContent(page);
+                ParseForMedia.ProcessContent(page);
+                if (directory)
+                {
+                    ParseForLinks.ProcessContent(page);
+                }
             }
-            CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode}.xlsx");
-            GenReport.CreateReport(ParseForA11y.Data, null, null);
+            if (QuitThread)
+            {
+                QuitThread = false;
+                return;
+            }
+            CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode}_{CanvasApi.CurrentDomain}.xlsx");
+            GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks.Data);
             s.Stop();
             e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}";
         }
@@ -586,20 +772,56 @@ namespace WPFCommandPanel
                 Collection<PSObject> results = posh.Invoke();
                 foreach(var obj in results)
                 {
+                    if (QuitThread)
+                    {
+                        QuitThread = false;
+                        return;
+                    }
                     Run run = new Run("Report:\n");
                     run.Foreground = System.Windows.Media.Brushes.Cyan;
                     TerminalOutput.Inlines.Add(run);
-                    TerminalOutput.Inlines.Add(obj.ToString().Remove(0,2).Replace("; ", "\n").Replace("=", ": "));
+                    TerminalOutput.Inlines.Add(obj.ToString().Remove(0,2).Replace("; ", "\n").Replace("=", ": ") + "\n");
                 }
             }
         }
         private void ReviewPage_Click(object sender, EventArgs e)
         {
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.DoWork += ReviewPage;
+            worker.RunWorkerAsync();
+        }
+        private void ReviewPage(object sender, DoWorkEventArgs e)
+        {
             //Get current page HTML and review it... or just run it from the dom (should use a background worker as well).
+            Dictionary<string, string> page = new Dictionary<string, string>();
+            page[chrome.Url] = chrome.FindElementByTagName("body").GetAttribute("outerHTML");
+            PageParser.A11yReviewer.ProcessContent(page);
+            PageParser.MediaReviewer.ProcessContent(page);
+            PageParser.LinkReviewer.ProcessContent(page);
+        }
+        private void CreatePageReport_Click(object sender, EventArgs e)
+        {
+            BackgroundWorker worker = new BackgroundWorker();
+            worker.WorkerReportsProgress = true;
+            worker.DoWork += CreatePageReport;
+            worker.RunWorkerAsync();
+        }
+        private void CreatePageReport(object sender, DoWorkEventArgs e)
+        {
+            CreateExcelReport GenReport = new CreateExcelReport(Environment
+                .GetFolderPath(Environment.SpecialFolder.Desktop) + 
+                $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{chrome.Url.Split(new [] { ".com" }, StringSplitOptions.RemoveEmptyEntries).First().Split(new [] { "//" }, StringSplitOptions.RemoveEmptyEntries).Last()}_WebPage.xlsx");
+            GenReport.CreateReport(PageParser.A11yReviewer.Data, null, null);
+            PageParser = new PageReviewer();
         }
         private void ClearButton_Click(object sender, EventArgs e)
         {
             TerminalOutput.Text = "";
+        }
+        private void TextInput_ScrollDown(object sender, EventArgs e)
+        {
+            TextBlockScrollBar.ScrollToEnd();
         }
     }
 }

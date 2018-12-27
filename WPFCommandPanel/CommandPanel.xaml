@@ -54,18 +54,19 @@
                       Height="500"
                       VerticalAlignment="Top">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Button Grid.Row="0" 
@@ -101,6 +102,10 @@
                             Margin="0 0 0 10"
                             Click="ReviewPage_Click"/>
                     <Button Grid.Row="8"
+                        Content="Create Page Report"
+                        Margin="0 0 0 10"
+                        Click="CreatePageReport_Click"/>
+                    <Button Grid.Row="9"
                         Content="Stop"
                         Margin="0 0 0 10"
                         Click="QuitProcess"/>
@@ -197,7 +202,10 @@
                     </Grid.ColumnDefinitions>
                 <ScrollViewer Grid.Row="0" 
                               Margin="10" 
-                              MaxHeight="230">
+                              MaxHeight="230"
+                              Name="TextBlockScrollBar"
+                              ScrollChanged="TextInput_ScrollDown"
+                              >
                         <Border BorderBrush="Gray"
                                 BorderThickness="2">
                             <TextBlock  Name="TerminalOutput"
