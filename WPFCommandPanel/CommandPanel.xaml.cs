@@ -45,7 +45,7 @@ namespace WPFCommandPanel
             {
                 A11yReviewer = new A11yParser();
                 MediaReviewer = new MediaParser();
-                LinkReviewer = new LinkParser();
+                LinkReviewer = new LinkParser("None");
             }
             public A11yParser A11yReviewer { get; set; }
             public MediaParser MediaReviewer { get; set; }
@@ -206,8 +206,8 @@ namespace WPFCommandPanel
             {
                 return;
             }
-            this.file_paths.Remove(file_paths.First(f => f.FullName == e.OldFullPath));
-            this.file_paths.Add(new FileDisplay(e.FullPath));
+            file_paths.Remove(file_paths.First(f => f.FullName == e.OldFullPath));
+            file_paths.Add(new FileDisplay(e.FullPath));
         }
         public void OpenBrowserButton(object sender, EventArgs e)
         {
@@ -220,8 +220,10 @@ namespace WPFCommandPanel
         private void OpenBrowser(object sender, DoWorkEventArgs e)
         {
             //Open the browser to be controlled
-            this.chrome = new ChromeDriver(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
-            this.wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
+            var chromeDriverService = ChromeDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+            chromeDriverService.HideCommandPromptWindow = true;
+            chrome = new ChromeDriver(chromeDriverService);
+            wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
         }
         private void Canvas_Click(object sender, EventArgs e)
         {
@@ -655,9 +657,11 @@ namespace WPFCommandPanel
         }
         private void ReportFinished(object sender, RunWorkerCompletedEventArgs e)
         {
-            this.Dispatcher.Invoke(() =>
+            Dispatcher.Invoke(() =>
             {
-                MessageBox.Show($"{e.Result}");
+                Run run = new Run($"{e.Result}");
+                run.Foreground = System.Windows.Media.Brushes.Cyan;
+                TerminalOutput.Inlines.Add(run);
             });
         }
         private void CreateReport(object sender, DoWorkEventArgs e)
@@ -731,9 +735,14 @@ namespace WPFCommandPanel
             //Code to run report... (need to copy / add ReportGenerator code or move this project to ReportGenerator solution and use this as the executable.
             A11yParser ParseForA11y = new A11yParser();
             MediaParser ParseForMedia = new MediaParser();
-            LinkParser ParseForLinks = new LinkParser();
+            LinkParser ParseForLinks = new LinkParser(course.CourseIdOrPath);
             foreach (var page in course.PageHtmlList)
             {
+                if (QuitThread)
+                {
+                    QuitThread = false;
+                    return;
+                }
                 ParseForA11y.ProcessContent(page);
                 ParseForMedia.ProcessContent(page);
                 if (directory)
@@ -749,7 +758,9 @@ namespace WPFCommandPanel
             CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode}_{CanvasApi.CurrentDomain}.xlsx");
             GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks.Data);
             s.Stop();
+            ParseForMedia.Chrome.Quit();
             e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}";
+           
         }
         private void ReportList_DoubleClick(object sender, EventArgs e)
         {
@@ -789,16 +800,38 @@ namespace WPFCommandPanel
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = true;
             worker.DoWork += ReviewPage;
+            worker.RunWorkerCompleted += PageReviewFinished;
             worker.RunWorkerAsync();
         }
         private void ReviewPage(object sender, DoWorkEventArgs e)
         {
+            Dispatcher.Invoke(() =>
+            {
+                Run run = new Run("Reviewing current page...\n");
+                run.Foreground = System.Windows.Media.Brushes.Cyan;
+                TerminalOutput.Inlines.Add(run);
+            });
             //Get current page HTML and review it... or just run it from the dom (should use a background worker as well).
             Dictionary<string, string> page = new Dictionary<string, string>();
             page[chrome.Url] = chrome.FindElementByTagName("body").GetAttribute("outerHTML");
-            PageParser.A11yReviewer.ProcessContent(page);
-            PageParser.MediaReviewer.ProcessContent(page);
-            PageParser.LinkReviewer.ProcessContent(page);
+            try
+            {
+                PageParser.A11yReviewer.ProcessContent(page);
+                PageParser.MediaReviewer.ProcessContent(page);
+                PageParser.LinkReviewer.ProcessContent(page);
+            }
+            catch
+            {
+                return;
+            }
+           
+        }
+        private void PageReviewFinished(object sender, RunWorkerCompletedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                TerminalOutput.Inlines.Add("Review of page finished.\n");
+            });
         }
         private void CreatePageReport_Click(object sender, EventArgs e)
         {
@@ -809,19 +842,24 @@ namespace WPFCommandPanel
         }
         private void CreatePageReport(object sender, DoWorkEventArgs e)
         {
+            Console.WriteLine("Creating report...");
             CreateExcelReport GenReport = new CreateExcelReport(Environment
                 .GetFolderPath(Environment.SpecialFolder.Desktop) + 
-                $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{chrome.Url.Split(new [] { ".com" }, StringSplitOptions.RemoveEmptyEntries).First().Split(new [] { "//" }, StringSplitOptions.RemoveEmptyEntries).Last()}_WebPage.xlsx");
-            GenReport.CreateReport(PageParser.A11yReviewer.Data, null, null);
+                $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_WebPage.xlsx");
+            GenReport.CreateReport(PageParser.A11yReviewer.Data, PageParser.MediaReviewer.Data, null);
+            PageParser.MediaReviewer.Chrome.Quit();
             PageParser = new PageReviewer();
         }
         private void ClearButton_Click(object sender, EventArgs e)
         {
             TerminalOutput.Text = "";
         }
-        private void TextInput_ScrollDown(object sender, EventArgs e)
+        private void TextInput_ScrollDown(object sender, ScrollChangedEventArgs e)
         {
-            TextBlockScrollBar.ScrollToEnd();
+            if(e.ExtentHeightChange > 0)
+            {   
+                TextBlockScrollBar.ScrollToEnd();
+            }
         }
     }
 }

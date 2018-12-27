@@ -208,7 +208,7 @@
                               >
                         <Border BorderBrush="Gray"
                                 BorderThickness="2">
-                            <TextBlock  Name="TerminalOutput"
+                            <local:SelectableTextBlock  x:Name="TerminalOutput"
                                     Background="Black" 
                                     Foreground="#FF2EFF00"
                                     TextWrapping="Wrap"/>
