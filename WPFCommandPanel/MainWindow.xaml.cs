@@ -21,7 +21,9 @@ namespace WPFCommandPanel
     /// </summary>
     public partial class MainWindow : Window
     {
+        //Need to referance the main window so that we can navigate to new pages from other elements
         public static MainWindow AppWindow;
+        //Not really needed to have this reference but if we want to add more tabs / pages then we can store the old pages so we don't lose any data from them.
         public static CommandPanel CommandPanelObj;
         public MainWindow()
         {

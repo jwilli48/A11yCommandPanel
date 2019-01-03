@@ -37,10 +37,11 @@ namespace WPFCommandPanel
         //Allows the program to control a single browser through multiple events and commands
         public ChromeDriver chrome;
         public WebDriverWait wait;
+        //Flag to quit a given opperation. Should add checks for it in various places so it can jsut end the event or funciton.
         public bool QuitThread = false;
         
         public class PageReviewer
-        {
+        {   //Object to review the current webpage for the user and hold the data. Is reset whenever they click the CreateReport button.
             public PageReviewer()
             {
                 A11yReviewer = new A11yParser();
@@ -244,7 +245,7 @@ namespace WPFCommandPanel
             QuitThread = true;
         }
         private void Ralt_Click(object sender, EventArgs e)
-        {
+        {   //Runs the ralt function reworked into c#. Will run either the buzz or canvas ones, if not on eithe rof those pages then fails.
             BackgroundWorker worker = new BackgroundWorker();
             worker.WorkerReportsProgress = true;
 
@@ -258,13 +259,13 @@ namespace WPFCommandPanel
             }
             else
             {
-                MessageBox.Show("Not on a valid URL");
+                MessageBox.Show("Not on a valid page");
                 return;
             }
             worker.RunWorkerAsync();
         }
         public class PoshHelper
-        {
+        {   //Helper object for if I run into the problem again of a popup freezing everything
             public PoshHelper(ChromeDriver d, int s)
             {
                 driver = d;
@@ -620,7 +621,7 @@ namespace WPFCommandPanel
         private void ShowA11yHelpers(object sender, DoWorkEventArgs e)
         {
             void RecursiveA11y(int num = 0)
-            {
+            {   //recursively run the javascript within every iframe, so it should work on any webpage.
                 var num_frames = chrome.FindElementsByTagName("iframe").Count();
                 if (num > 20){
                     //Fail safe to not get stuck
@@ -632,15 +633,16 @@ namespace WPFCommandPanel
                     RecursiveA11y((num + 1));
                 }
                 if(chrome.FindElementsByCssSelector(".AccessibilityHelper").Count() > 0)
-                {
+                {   //If that class exists then the function was already ran
                     chrome.SwitchTo().ParentFrame();
                     return;
                 }
+                //Huge string of javascript to highlight all of the given accessibility things I want. Can just add a new line at the bottom of the string to extend it.
                 chrome.ExecuteScript(@"(function() { var e, t, o = document.querySelectorAll(""img""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", /*e.style.clear = ""right"",*/ e.style.cssFloat = o[t].style.cssFloat, e.style.margin = ""-7px -0px -7px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""75px"", e.style.fontSize = ""12px"", e.style.zIndex = ""0"", e.textContent = ""Alt Text:\n"" + o[t].alt, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());javascript:(function() { var e, t, o = document.querySelectorAll(""iframe""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"", /*e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px -0px -7px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""300px"", e.style.zIndex = ""0"", e.textContent = ""Iframe title:\n"" + o[t].title, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());javascript:(function() { var e, t, o = document.querySelectorAll(""h1""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"",/* e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px 0px 0px 0px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""35px"", e.style.zIndex = ""0"", e.textContent = o[t].tagName, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());(function() { var e, t, o = document.querySelectorAll(""h2""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"", /*e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px 0px 0px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""35px"", e.style.zIndex = ""0"", e.textContent = o[t].tagName, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());(function() { var e, t, o = document.querySelectorAll(""h3""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"", /*e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px 0px 0px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""35px"", e.style.zIndex = ""0"", e.textContent = o[t].tagName, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());(function() { var e, t, o = document.querySelectorAll(""h4""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"", /*e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px 0px 0px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""35px"", e.style.zIndex = ""0"", e.textContent = o[t].tagName, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());(function() { var e, t, o = document.querySelectorAll(""h5""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"", /*e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px 0px 0px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""35px"", e.style.zIndex = ""0"", e.textContent = o[t].tagName, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());(function() { var e, t, o = document.querySelectorAll(""h6""); function r(e) { ""use strict""; e.style.backgroundColor = ""#FFE"", e.style.borderColor = ""#393"", e.style.boxShadow = ""1px 2px 5px #CCC"", e.style.zIndex = ""1"" } function s(e) { ""use strict""; e.style.backgroundColor = ""#FFF"", e.style.borderColor = ""#CCC"", e.style.boxShadow = ""none"", e.style.zIndex = ""0"" } function l(e, t, o) { ""use strict""; return function() { e(t), e(o) } } for (t = 0; t < o.length; t++)(e = document.createElement(""div"")).style.backgroundColor = ""#FFF"", e.className = ""AccessibilityHelper"", e.style.border = ""2px solid #CCC"", e.style.borderRadius = ""7px"", e.style.clear = ""right"", /*e.style.cssFloat = ""left"",*/ e.style.margin = ""-7px 0px 0px -7px"", e.style.padding = ""5px"", e.style.position = ""relative"", e.style.textAlign = ""left"", e.style.whiteSpace = ""pre-wrap"", e.style.width = ""35px"", e.style.zIndex = ""0"", e.textContent = o[t].tagName, o[t].style.backgroundColor = ""#FFF"", o[t].className += "" AccessibilityHelper"", o[t].style.border = ""2px solid #CCC"", o[t].style.borderRadius = ""7px"", o[t].style.margin = ""-7px"", o[t].style.padding = ""5px"", o[t].parentNode.insertBefore(e, o[t]), e.addEventListener(""mouseover"", l(r, e, o[t])), o[t].addEventListener(""mouseover"", l(r, e, o[t])), e.addEventListener(""mouseout"", l(s, e, o[t])), o[t].addEventListener(""mouseout"", l(s, e, o[t])); }());
     (function() {
-    document.querySelectorAll(""th"").forEach(c => {if(c.scope == ""row""){c.style.backgroundColor = ""green"";}else if(c.scope == ""col""){c.style.backgroundColor = ""blue"";}else{c.style.backgroundColor = ""red""}});
-    document.querySelectorAll(""i"").forEach(c => c.style.backgroundColor = ""DeepPink"");
-    document.querySelectorAll(""b"").forEach(c => c.style.backgroundColor = ""DarkViolet"");
+    document.querySelectorAll(""th"").forEach(c => {if(c.scope == ""row""){c.style.backgroundColor = ""green"";}else if(c.scope == ""col""){c.style.backgroundColor = ""blue"";}else{c.style.backgroundColor = ""red""} c.className += "" AccessibilityHelper"";});
+    document.querySelectorAll(""i"").forEach(c => {c.style.backgroundColor = ""DeepPink""; c.className += "" AccessibilityHelper"";});
+    document.querySelectorAll(""b"").forEach(c => {c.style.backgroundColor = ""DarkViolet""; c.className += "" AccessibilityHelper"";});
     }());");
                 chrome.SwitchTo().ParentFrame();
             }
@@ -716,6 +718,7 @@ namespace WPFCommandPanel
             }
             CourseInfo course;
             bool directory = false;
+            LinkParser ParseForLinks = null; //Need to declare this early as it is only set if it is a directory
             if (int.TryParse(text, out int id))
             {
                 //It is an ID, create course info with new id var
@@ -726,6 +729,7 @@ namespace WPFCommandPanel
                 //Just send it in as a string path
                 course = new CourseInfo(text);
                 directory = true;
+                ParseForLinks = new LinkParser(course.CourseIdOrPath);
             }
             if (QuitThread)
             {
@@ -735,7 +739,7 @@ namespace WPFCommandPanel
             //Code to run report... (need to copy / add ReportGenerator code or move this project to ReportGenerator solution and use this as the executable.
             A11yParser ParseForA11y = new A11yParser();
             MediaParser ParseForMedia = new MediaParser();
-            LinkParser ParseForLinks = new LinkParser(course.CourseIdOrPath);
+             
             foreach (var page in course.PageHtmlList)
             {
                 if (QuitThread)
@@ -756,7 +760,7 @@ namespace WPFCommandPanel
                 return;
             }
             CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode}_{CanvasApi.CurrentDomain}.xlsx");
-            GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks.Data);
+            GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks?.Data);
             s.Stop();
             ParseForMedia.Chrome.Quit();
             e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}";
@@ -778,6 +782,7 @@ namespace WPFCommandPanel
             //Insert code for mReports. May be easiest to create a POSH terminal and just copy paste the script over
             using(PowerShell posh = PowerShell.Create())
             {
+                //I was to lazy to rewrite the function into c# and just import the POSH script.
                 string script = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\MoveReports.ps1");
                 posh.AddScript(script);
                 Collection<PSObject> results = posh.Invoke();
@@ -811,9 +816,11 @@ namespace WPFCommandPanel
                 run.Foreground = System.Windows.Media.Brushes.Cyan;
                 TerminalOutput.Inlines.Add(run);
             });
-            //Get current page HTML and review it... or just run it from the dom (should use a background worker as well).
-            Dictionary<string, string> page = new Dictionary<string, string>();
-            page[chrome.Url] = chrome.FindElementByTagName("body").GetAttribute("outerHTML");
+            //Get current page HTML and review it.
+            Dictionary<string, string> page = new Dictionary<string, string>
+            {
+                [chrome.Url] = chrome.FindElementByTagName("body").GetAttribute("outerHTML")
+            };
             try
             {
                 PageParser.A11yReviewer.ProcessContent(page);

@@ -16,6 +16,7 @@ namespace WPFCommandPanel
     {
     }
 
+    //Helper classes to extend some usablilty, found them on stack overflow and they work great. It is a reflection of the textblock class adn then a custom textblock with the ability to have its text selected / copy and pasted.
     class TextEditorWrapper
     {   //https://stackoverflow.com/questions/136435/any-way-to-make-a-wpf-textblock-selectable
         private static readonly Type TextEditorType = Type.GetType("System.Windows.Documents.TextEditor, PresentationFramework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35");

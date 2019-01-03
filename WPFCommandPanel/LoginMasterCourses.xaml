@@ -7,7 +7,33 @@
       mc:Ignorable="d" 
       d:DesignHeight="300" d:DesignWidth="300"
       Title="LoginMasterCourses">
+    <Page.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="Black"/>
+            <Setter Property="BorderThickness" Value=".3 .2 .2 .2"/>
+            <Setter Property="Foreground" Value="Gray"/>
+        </Style>
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="Gray"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="Gray"/>
+        </Style>
+        <Style TargetType="TextBlock">
 
+        </Style>
+    </Page.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
