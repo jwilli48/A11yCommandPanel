@@ -145,7 +145,7 @@
             <Setter Property="MinHeight" Value="46"/>
             <!--CaptionHeight + ResizeBorderThickness * 2-->
             <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="DarkGray"/>
+            <Setter Property="BorderBrush" Value="Black"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Template" Value="{StaticResource WindowTemplate}"/>

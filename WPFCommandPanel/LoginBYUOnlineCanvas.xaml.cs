@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.IO;
 using System.Web.Script.Serialization;
+using System.Management.Automation;
 
 namespace WPFCommandPanel
 {
@@ -40,12 +41,25 @@ namespace WPFCommandPanel
         {
             var TokenInfo = Token.Text;
             var BaseUrlInfo = BaseUrl.Text;
-            //Save the passwords
-            using (StreamWriter file = File.CreateText(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\BYU_CanvasApiCreds.json"))
+            var FilePath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\BYU_CanvasApiCreds.json";
+            if (File.Exists(FilePath))
             {
-                file.Write(new JavaScriptSerializer().Serialize(new InfoToSave(TokenInfo, BaseUrlInfo)));
+                goto SkipFileCreation;
             }
-
+            using (var posh = PowerShell.Create())
+            {
+                posh.AddScript(@"param($t, $b, $p)
+                                    $ApiInfo = [ordered]@{
+                                        Token = $t
+                                        BaseUri = $b
+                                    }
+                                    $ApiInfo | ConvertTo-Json | Out-File -FilePath $p")
+                                    .AddArgument(TokenInfo)
+                                    .AddArgument(BaseUrlInfo)
+                                    .AddArgument(FilePath)
+                                    .Invoke();
+            } 
+            SkipFileCreation:
             if (!(new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\MASTER_CanvasApiCreds.json").Exists))
             {
                 WPFCommandPanel.MainWindow.AppWindow.ShowPage.Navigate(new LoginMasterCourses());

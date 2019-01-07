@@ -221,6 +221,13 @@
                         VerticalAlignment="Bottom"
                         Content="Clear"
                         Click="ClearButton_Click"/>
+                    <Button Grid.Row="1"
+                        Margin="10 0 10 0"
+                        Width="200"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Content="Accessibility Course"
+                        Click="GoToAccessibility_Course"/>
                 </Grid>
             </GroupBox>
         </Grid>

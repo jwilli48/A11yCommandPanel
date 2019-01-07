@@ -180,7 +180,7 @@ namespace WPFCommandPanel
             ReportList.DisplayMemberPath = "DisplayName";
             ReportList.SelectedValuePath = "FullName";
 
-            PageParser = new PageReviewer();
+            //PageParser = new PageReviewer();
         }
         private void FileWatcher_Created(object sender, System.IO.FileSystemEventArgs e)
         {
@@ -224,7 +224,7 @@ namespace WPFCommandPanel
             var chromeDriverService = ChromeDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
             chromeDriverService.HideCommandPromptWindow = true;
             chrome = new ChromeDriver(chromeDriverService);
-            wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
+            wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 1));
         }
         private void Canvas_Click(object sender, EventArgs e)
         {
@@ -277,6 +277,7 @@ namespace WPFCommandPanel
         private void CanvasRalt(object sender, DoWorkEventArgs e)
         {
             var number_of_modules = chrome.FindElementsByClassName("item_name").Count(c => c.Text != "");
+            wait.Timeout = new TimeSpan(0, 0, 1);
             for (int i = 0; i < number_of_modules; i++)
             {
                 if (QuitThread)
@@ -286,8 +287,7 @@ namespace WPFCommandPanel
                 }
                 try
                 {
-                    wait.Until(c => c.FindElement(By.ClassName("item_name")));
-                    chrome.FindElementsByClassName("item_name")[i].Click();
+                    wait.Until(c => c.FindElements(By.ClassName("item_name")))[i].Click();
                     /*
                     PowerShell helper = PowerShell.Create();
                     helper.AddScript("param($c)\n" +
@@ -582,8 +582,10 @@ namespace WPFCommandPanel
         }
         private void Login_Click(object sender, EventArgs e)
         {
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
             worker.DoWork += LoginToByu;
             worker.RunWorkerAsync();
         }
@@ -613,8 +615,10 @@ namespace WPFCommandPanel
         }
         private void A11yHelp_Click(object sender, EventArgs e)
         {
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
             worker.DoWork += ShowA11yHelpers;
             worker.RunWorkerAsync();
         }
@@ -651,8 +655,10 @@ namespace WPFCommandPanel
         
         private void GenerateReport_Click(object sender, EventArgs e)
         {
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
             worker.DoWork += CreateReport;
             worker.RunWorkerCompleted += ReportFinished;
             worker.RunWorkerAsync();
@@ -661,8 +667,10 @@ namespace WPFCommandPanel
         {
             Dispatcher.Invoke(() =>
             {
-                Run run = new Run($"{e.Result}");
-                run.Foreground = System.Windows.Media.Brushes.Cyan;
+                Run run = new Run($"{e.Result}")
+                {
+                    Foreground = System.Windows.Media.Brushes.Cyan
+                };
                 TerminalOutput.Inlines.Add(run);
             });
         }
@@ -672,8 +680,10 @@ namespace WPFCommandPanel
             s.Start();
             this.Dispatcher.Invoke(() =>
             {
-                Run run = new Run($"Generating Report\n");
-                run.Foreground = System.Windows.Media.Brushes.Cyan;
+                Run run = new Run($"Generating Report\n")
+                {
+                    Foreground = System.Windows.Media.Brushes.Cyan
+                };
                 TerminalOutput.Inlines.Add(run);
             });
 
@@ -736,7 +746,6 @@ namespace WPFCommandPanel
                 QuitThread = false;
                 return;
             }
-            //Code to run report... (need to copy / add ReportGenerator code or move this project to ReportGenerator solution and use this as the executable.
             A11yParser ParseForA11y = new A11yParser();
             MediaParser ParseForMedia = new MediaParser();
              
@@ -793,8 +802,10 @@ namespace WPFCommandPanel
                         QuitThread = false;
                         return;
                     }
-                    Run run = new Run("Report:\n");
-                    run.Foreground = System.Windows.Media.Brushes.Cyan;
+                    Run run = new Run("Report:\n")
+                    {
+                        Foreground = System.Windows.Media.Brushes.Cyan
+                    };
                     TerminalOutput.Inlines.Add(run);
                     TerminalOutput.Inlines.Add(obj.ToString().Remove(0,2).Replace("; ", "\n").Replace("=", ": ") + "\n");
                 }
@@ -802,8 +813,14 @@ namespace WPFCommandPanel
         }
         private void ReviewPage_Click(object sender, EventArgs e)
         {
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
+            if(PageParser == null)
+            {
+                PageParser = new PageReviewer();
+            }
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
             worker.DoWork += ReviewPage;
             worker.RunWorkerCompleted += PageReviewFinished;
             worker.RunWorkerAsync();
@@ -812,8 +829,10 @@ namespace WPFCommandPanel
         {
             Dispatcher.Invoke(() =>
             {
-                Run run = new Run("Reviewing current page...\n");
-                run.Foreground = System.Windows.Media.Brushes.Cyan;
+                Run run = new Run("Reviewing current page...\n")
+                {
+                    Foreground = System.Windows.Media.Brushes.Cyan
+                };
                 TerminalOutput.Inlines.Add(run);
             });
             //Get current page HTML and review it.
@@ -842,8 +861,10 @@ namespace WPFCommandPanel
         }
         private void CreatePageReport_Click(object sender, EventArgs e)
         {
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
             worker.DoWork += CreatePageReport;
             worker.RunWorkerAsync();
         }
@@ -855,7 +876,7 @@ namespace WPFCommandPanel
                 $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_WebPage.xlsx");
             GenReport.CreateReport(PageParser.A11yReviewer.Data, PageParser.MediaReviewer.Data, null);
             PageParser.MediaReviewer.Chrome.Quit();
-            PageParser = new PageReviewer();
+            PageParser = null;
         }
         private void ClearButton_Click(object sender, EventArgs e)
         {
@@ -867,6 +888,18 @@ namespace WPFCommandPanel
             {   
                 TextBlockScrollBar.ScrollToEnd();
             }
+        }
+        private void GoToAccessibility_Course(object sender, EventArgs e)
+        {
+            if(chrome == null)
+            {
+                //Open the browser to be controlled
+                var chromeDriverService = ChromeDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+                chromeDriverService.HideCommandPromptWindow = true;
+                chrome = new ChromeDriver(chromeDriverService);
+                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
+            }
+            chrome.Url = "https://byu.instructure.com/courses/1026";
         }
     }
 }
