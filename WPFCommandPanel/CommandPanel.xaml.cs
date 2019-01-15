@@ -202,12 +202,22 @@ namespace WPFCommandPanel
         }
         public void FileWatcher_Renamed(object sender, System.IO.RenamedEventArgs e)
         {
+         
             //If it was renamed we need to delete old one and create new one with new path
             if (!e.FullPath.Contains(".xlsx"))
             {
                 return;
             }
-            file_paths.Remove(file_paths.First(f => f.FullName == e.OldFullPath));
+            if(e.Name == e.OldName)
+            {
+                return;
+            }
+            if (!e.OldName.Contains(".xlsx"))
+            {   //Excel for some reason creates a .tmp file everytime you save the excel document and then renames that to the correct name
+                //This causes this event to be run even though it is not needed, so just return in that case
+                return;
+            }
+            file_paths.Remove(file_paths.FirstOrDefault(f => f.FullName == e.OldFullPath));
             file_paths.Add(new FileDisplay(e.FullPath));
         }
         public void OpenBrowserButton(object sender, EventArgs e)
@@ -515,6 +525,7 @@ namespace WPFCommandPanel
                     chrome.FindElementsByTagName("button").Where(el => el.Text == "Update").First().Click();
                     //Save page
                     chrome.FindElementsByTagName("button").Where(el => el.Text == "Save").First().Click();
+                   
                     try
                     {
                         if (QuitThread)
@@ -748,8 +759,8 @@ namespace WPFCommandPanel
             }
             A11yParser ParseForA11y = new A11yParser();
             MediaParser ParseForMedia = new MediaParser();
-             
-            foreach (var page in course.PageHtmlList)
+
+            Parallel.ForEach(course.PageHtmlList, page =>
             {
                 if (QuitThread)
                 {
@@ -762,17 +773,18 @@ namespace WPFCommandPanel
                 {
                     ParseForLinks.ProcessContent(page);
                 }
-            }
+            });
             if (QuitThread)
             {
                 QuitThread = false;
                 return;
             }
-            CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode}_{CanvasApi.CurrentDomain}.xlsx");
+            var file_name_extention = ((CanvasApi.CurrentDomain == "Directory") ? System.IO.Path.GetPathRoot(text) + "Drive" : CanvasApi.CurrentDomain).Replace(":\\", "");
+            CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode}_{file_name_extention}.xlsx");
             GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks?.Data);
             s.Stop();
             ParseForMedia.Chrome.Quit();
-            e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}";
+            e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}\n";
            
         }
         private void ReportList_DoubleClick(object sender, EventArgs e)
@@ -807,7 +819,7 @@ namespace WPFCommandPanel
                         Foreground = System.Windows.Media.Brushes.Cyan
                     };
                     TerminalOutput.Inlines.Add(run);
-                    TerminalOutput.Inlines.Add(obj.ToString().Remove(0,2).Replace("; ", "\n").Replace("=", ": ") + "\n");
+                    TerminalOutput.Inlines.Add(obj.ToString().Remove(0,2).Replace("; ", "\n").Replace("=", ": ").Replace("}", "") + "\n");
                 }
             }
         }
