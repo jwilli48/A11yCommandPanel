@@ -5,13 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.IO;
 using System.ComponentModel;
 using OpenQA.Selenium;
@@ -179,7 +173,7 @@ namespace WPFCommandPanel
             ReportList.ItemsSource = file_paths;
             ReportList.DisplayMemberPath = "DisplayName";
             ReportList.SelectedValuePath = "FullName";
-
+            HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
             //PageParser = new PageReviewer();
         }
         private void FileWatcher_Created(object sender, System.IO.FileSystemEventArgs e)
@@ -202,7 +196,7 @@ namespace WPFCommandPanel
         }
         public void FileWatcher_Renamed(object sender, System.IO.RenamedEventArgs e)
         {
-         
+         /*
             //If it was renamed we need to delete old one and create new one with new path
             if (!e.FullPath.Contains(".xlsx"))
             {
@@ -219,6 +213,7 @@ namespace WPFCommandPanel
             }
             file_paths.Remove(file_paths.FirstOrDefault(f => f.FullName == e.OldFullPath));
             file_paths.Add(new FileDisplay(e.FullPath));
+        */
         }
         public void OpenBrowserButton(object sender, EventArgs e)
         {
@@ -784,6 +779,12 @@ namespace WPFCommandPanel
             GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks?.Data);
             s.Stop();
             ParseForMedia.Chrome.Quit();
+            if(ParseForA11y.Data.Count() > int.Parse(File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt")))
+            {
+                File.WriteAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt", ParseForA11y.Data.Count().ToString());
+                HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+            }
+
             e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}\n";
            
         }

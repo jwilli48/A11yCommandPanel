@@ -28,6 +28,10 @@ namespace WPFCommandPanel.StyleableWindow
                 {
                     WPFCommandPanel.MainWindow.CommandPanelObj.chrome.Dispose();
                 }
+                if(WPFCommandPanel.MainWindow.CommandPanelObj.PageParser?.MediaReviewer?.Chrome != null)
+                {
+                    WPFCommandPanel.MainWindow.CommandPanelObj.PageParser.MediaReviewer.Chrome.Dispose();
+                }
                 window.Close();
             }
         }
