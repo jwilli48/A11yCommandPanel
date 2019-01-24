@@ -16,6 +16,7 @@ using System.Threading;
 using System.Collections.Specialized;
 using ReportGenerators;
 using System.Management.Automation;
+using My.CanvasApi;
 
 namespace WPFCommandPanel
 {
@@ -782,7 +783,10 @@ namespace WPFCommandPanel
             if(ParseForA11y.Data.Count() > int.Parse(File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt")))
             {
                 File.WriteAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt", ParseForA11y.Data.Count().ToString());
-                HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+                Dispatcher.Invoke(() =>
+                {
+                    HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+                });
             }
 
             e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}\n";
