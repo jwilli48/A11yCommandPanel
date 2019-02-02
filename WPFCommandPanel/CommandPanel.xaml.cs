@@ -17,6 +17,9 @@ using System.Collections.Specialized;
 using ReportGenerators;
 using System.Management.Automation;
 using My.CanvasApi;
+using My.SeleniumExtentions;
+using My.StringExtentions;
+using System.Text.RegularExpressions;
 
 namespace WPFCommandPanel
 {
@@ -153,6 +156,7 @@ namespace WPFCommandPanel
             {
                 get { return Encoding.UTF8; }
             }
+            
         }
         //Init
         public CommandPanel()
@@ -197,7 +201,6 @@ namespace WPFCommandPanel
         }
         public void FileWatcher_Renamed(object sender, System.IO.RenamedEventArgs e)
         {
-         /*
             //If it was renamed we need to delete old one and create new one with new path
             if (!e.FullPath.Contains(".xlsx"))
             {
@@ -212,9 +215,15 @@ namespace WPFCommandPanel
                 //This causes this event to be run even though it is not needed, so just return in that case
                 return;
             }
-            file_paths.Remove(file_paths.FirstOrDefault(f => f.FullName == e.OldFullPath));
-            file_paths.Add(new FileDisplay(e.FullPath));
-        */
+            try
+            {
+                file_paths.Remove(file_paths.FirstOrDefault(f => f.FullName == e.OldFullPath));
+                file_paths.Add(new FileDisplay(e.FullPath));
+            }
+            catch
+            {
+                Console.WriteLine("Failed to register file rename...");
+            }
         }
         public void OpenBrowserButton(object sender, EventArgs e)
         {
@@ -229,8 +238,19 @@ namespace WPFCommandPanel
             //Open the browser to be controlled
             var chromeDriverService = ChromeDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
             chromeDriverService.HideCommandPromptWindow = true;
-            chrome = new ChromeDriver(chromeDriverService);
-            wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 1));
+            var chromeOptions = new ChromeOptions();
+            chromeOptions.AddArguments("user-data-dir=" + Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Google\Chrome\User Data");
+            try
+            {
+                chrome = new ChromeDriver(chromeDriverService, chromeOptions);
+                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 1));
+            }
+            catch
+            {
+                Console.WriteLine("Failed to open browser with profile, check if Chrome is already open. Opening default chrome...");
+                chrome = new ChromeDriver(chromeDriverService);
+                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 1));
+            }
         }
         private void Canvas_Click(object sender, EventArgs e)
         {
@@ -280,43 +300,80 @@ namespace WPFCommandPanel
             public ChromeDriver driver;
             public int i;
         }
+        public class StoreWebElement
+        {
+            public string text { get; set; }
+            public List<string> class_list { get; set; }
+            public string id { get; set; }
+            public override string ToString()
+            {
+                string s;
+                s = $"Id: {id}\n";
+                s += $"Text: {text}\n";
+                s += "Class list: ";
+                if(class_list == null)
+                {
+                    return s;
+                }
+                foreach(string i in class_list)
+                {
+                    s += i + " ";
+                }
+                return s;
+            }
+        }
         private void CanvasRalt(object sender, DoWorkEventArgs e)
         {
-            var number_of_modules = chrome.FindElementsByClassName("item_name").Count(c => c.Text != "");
-            wait.Timeout = new TimeSpan(0, 0, 1);
+            var s = new System.Diagnostics.Stopwatch();
+            s.Start();
+            var number_of_modules = chrome.FindElementsByClassName("context_module_item").Count(c => c.Text != "");
+            var home_page_url = chrome.Url;
+            wait.Timeout = new TimeSpan(0, 0, 3);
+            Dispatcher.Invoke(() =>
+            {
+                Run run = new Run($"RALT estimated time (10 seconds per page, {number_of_modules} pages) : {TimeSpan.FromSeconds(number_of_modules * 10).ToString(@"hh\:mm\:ss")}\n")
+                {
+                    Foreground = System.Windows.Media.Brushes.White
+                };
+                TerminalOutput.Inlines.Add(run);
+            });
+            StoreWebElement store = new StoreWebElement();
             for (int i = 0; i < number_of_modules; i++)
             {
-                if (QuitThread)
+                Dispatcher.Invoke(() =>
                 {
-                    QuitThread = false;
-                    return;
-                }
+                    TerminalOutput.Inlines.Remove(TerminalOutput.Inlines.LastInline);
+                    Run run = new Run($"{i} / {number_of_modules} . . .")
+                    {
+                        Foreground = System.Windows.Media.Brushes.DarkGoldenrod
+                    };
+                    TerminalOutput.Inlines.Add(run);
+                });
                 try
                 {
-                    wait.Until(c => c.FindElements(By.ClassName("item_name")))[i].Click();
-                    /*
-                    PowerShell helper = PowerShell.Create();
-                    helper.AddScript("param($c)\n" +
-                        "process{" +
-                        "($c.Driver.FindElementsByClassname(\"item_name\") | Select-Object -Index $c.i).click()" +
-                        "}").AddArgument(new PoshHelper(this.chrome, i));
-                    var job = helper.BeginInvoke();
-                    for(var j = 0; j < 500; j++)
+                    store = new StoreWebElement();
+                    var cur_item = wait.Until(c => c.FindElements(By.CssSelector("li[class*=\"context_module_item\"]")))[i];
+                    store.id = cur_item.GetAttribute("id");
+                    store.text = cur_item.Text;
+                    var class_list = cur_item.GetAttribute("class").CleanSplit(" ").Select(c => Regex.Replace(c, @"\s+", ""));
+                    store.class_list = class_list.ToList();
+                    if (class_list.Contains("context_module_sub_header"))
                     {
-                        if (job.IsCompleted)
-                        {
-                            break;
-                        }
-                        if(j >= 450)
-                        {
-                            
-                        }
-                    }*/
-                    wait.Until(c => c.FindElement(By.CssSelector("a[class*=\"edit\""))).Click();
+                        continue;
+                    }
+                    else if (class_list.Contains("external_url"))
+                    {
+                        continue;
+                    }
+
+                    chrome.Url = cur_item.FindElement(By.CssSelector("a.item_link")).GetAttribute("href");
+                    var edit_button = wait.Until(c => c.FindElement(By.CssSelector("a[class*=\"edit\"]")));
+                    edit_button.Click();
+
                     if (chrome.Url.Contains("quiz"))
                     {
                         wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("quiz_description_ifr"))));
-                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
+                        chrome.ExecuteScript("var el = document.querySelector(\"img\"); if(el){el.setAttribute('alt','');}");
                         chrome.SwitchTo().ParentFrame();
                         chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
                         wait.Until(c => c.FindElement(By.CssSelector("button.save_quiz_button"))).Click();
@@ -324,121 +381,61 @@ namespace WPFCommandPanel
                     else if (chrome.Url.Contains("assignment"))
                     {
                         wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("assignment_description_ifr"))));
-                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
-                        chrome.SwitchTo().ParentFrame();
+                    chrome.ExecuteScript("var el = document.querySelector(\"img\"); if(el){el.setAttribute('alt','');}");
+                    chrome.SwitchTo().ParentFrame();
                         chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
                         wait.Until(c => c.FindElement(By.CssSelector("button.btn.btn-primary"))).Click();
                     }
                     else if (chrome.Url.Contains("discussion"))
                     {
                         wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("discussion-topic-message9_ifr"))));
-                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
-                        chrome.SwitchTo().ParentFrame();
+                    chrome.ExecuteScript("var el = document.querySelector(\"img\"); if(el){el.setAttribute('alt','');}");
+                    chrome.SwitchTo().ParentFrame();
                         chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
                         wait.Until(c => c.FindElement(By.CssSelector("[data-text-while-loading]"))).Click();
                     }
-                    else
+                    else if (chrome.Url.Contains("pages"))
                     {
                         wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("wiki_page_body_ifr"))));
-                        chrome.ExecuteScript("document.querySelector(\"img\").setAttribute('alt','')");
-                        chrome.SwitchTo().ParentFrame();
+                    chrome.ExecuteScript("var el = document.querySelector(\"img\"); if(el){el.setAttribute('alt','');}");
+                    chrome.SwitchTo().ParentFrame();
                         chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
                         wait.Until(c => c.FindElement(By.CssSelector("button.submit"))).Click();
                     }
 
-                    wait.Until(c => c.FindElement(By.CssSelector("a[class*='edit']")));
-                    chrome.FindElementByCssSelector("a[class='home']").Click();
-                    if (QuitThread)
+                    if (chrome.isAlertPresent())
                     {
-                        QuitThread = false;
-                        return;
-                    }
-                }
-                catch
-                {
-                    try
-                    {
-                        if (QuitThread)
-                        {
-                            QuitThread = false;
-                            return;
-                        }
+                        chrome.SwitchTo().Alert().Dismiss();
                         chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
-                        if (chrome.Url.Contains("quiz"))
-                        {
-                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
-                            wait.Until(c => c.FindElement(By.CssSelector("button.save_quiz_button"))).Click();
-                        }
-                        else if (chrome.Url.Contains("assignment"))
-                        {
-                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
-                            wait.Until(c => c.FindElement(By.CssSelector("button.btn.btn-primary"))).Click();
-                        }
-                        else if (chrome.Url.Contains("discussion"))
-                        {
-                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
-                            wait.Until(c => c.FindElement(By.CssSelector("[data-text-while-loading]"))).Click();
-                        }
-                        else
-                        {
-                            chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
-                            wait.Until(c => c.FindElement(By.CssSelector("button.submit"))).Click();
-                        }
-                        if (QuitThread)
-                        {
-                            QuitThread = false;
-                            return;
-                        }
-                        wait.Until(c => c.FindElement(By.CssSelector("a[class*='edit']")));
-                        chrome.FindElementByCssSelector("a[class='home']").Click();
                     }
-                    catch
+                    chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
+                    wait.UntilElementIsVisible(By.CssSelector("a[class*='edit']"));
+                    chrome.FindElementByCssSelector("a[class='home']").Click();
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Error on {i}");
+                    Console.WriteLine($"Url: {chrome.Url}");
+                    Console.WriteLine($"ID: {store.id}");
+                    Console.WriteLine($"Text: {store.text}");
+                    Console.WriteLine($"ClassList: {String.Join(", ", store.class_list)}");
+                    Console.WriteLine(ex.Message);
+                    if (chrome.isAlertPresent())
                     {
-                        try
-                        {
-                            if (QuitThread)
-                            {
-                                QuitThread = false;
-                                return;
-                            }
-                            chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
-                            Console.WriteLine($"Failed to save page: {chrome.Url}");
-                            chrome.FindElementsByCssSelector("a[class='home']")[0].Click();
-                        }
-                        catch
-                        {
-                            try
-                            {
-                                if (QuitThread)
-                                {
-                                    QuitThread = false;
-                                    return;
-                                }
-                                chrome.FindElementsByCssSelector("span.ui-icon-closethick").First(c => c.Text == "close").Click();
-
-                                chrome.FindElementsByCssSelector("a[class='home']")[0].Click();
-                            }
-                            catch
-                            {
-                                if (QuitThread)
-                                {
-                                    QuitThread = false;
-                                    return;
-                                }
-                                Console.WriteLine("Probably at home page...");
-                                try
-                                {
-                                    wait.Until(c => c.SwitchTo().Alert()).Accept();
-                                }
-                                catch
-                                {
-                                    Console.WriteLine("Its broken, sorry");
-                                }
-                            }
-                        }
+                        chrome.SwitchTo().Alert().Dismiss();
+                        chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
                     }
+                    chrome.Url = home_page_url;
                 }
             }
+            Dispatcher.Invoke(() =>
+            {
+                Run run = new Run($"RALT finished.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}\n")
+                {
+                    Foreground = System.Windows.Media.Brushes.White
+                };
+                TerminalOutput.Inlines.Add(run);
+            });
         }
         private void BuzzRalt(object sender, DoWorkEventArgs e)
         {
@@ -607,15 +604,15 @@ namespace WPFCommandPanel
             var password = posh.Streams.Information[0].ToString();
             if (chrome.Url.Contains("instructure") || chrome.Url.Contains("cas"))
             {
-                wait.Until(c => c.FindElement(By.Id("netid"))).SendKeys(username);
-                wait.Until(c => c.FindElement(By.CssSelector("input#password"))).SendKeys(password);
+                wait.Until(c => c.FindElement(By.Id("netid"))).ReturnClear().SendKeys(username);
+                wait.Until(c => c.FindElement(By.CssSelector("input#password"))).ReturnClear().SendKeys(password);
                 wait.Until(c => c.FindElement(By.CssSelector("input[value*=\"Sign\"]"))).Submit();
             }
             else
             {
                 chrome.SwitchTo().Window("Brigham Young University Sign-in Service");
-                wait.Until(c => c.FindElement(By.Id("netid"))).SendKeys(username);
-                wait.Until(c => c.FindElement(By.CssSelector("input#password"))).SendKeys(password);
+                wait.Until(c => c.FindElement(By.Id("netid"))).ReturnClear().SendKeys(username);
+                wait.Until(c => c.FindElement(By.CssSelector("input#password"))).ReturnClear().SendKeys(password);
                 wait.Until(c => c.FindElement(By.CssSelector("input[value*=\"Sign\"]"))).Submit();
                 chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
             }
