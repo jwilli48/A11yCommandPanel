@@ -337,6 +337,14 @@ namespace WPFCommandPanel
                 };
                 TerminalOutput.Inlines.Add(run);
             });
+            Dispatcher.Invoke(() =>
+            {
+                Run run = new Run("0 / {number_of_modules} . . .")
+                {
+                    Foreground = System.Windows.Media.Brushes.DarkGoldenrod
+                };
+                TerminalOutput.Inlines.Add(run);
+            });
             StoreWebElement store = new StoreWebElement();
             for (int i = 0; i < number_of_modules; i++)
             {
