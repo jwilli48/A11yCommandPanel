@@ -38,6 +38,12 @@
     <ApplicationIcon>iconfinder_Gnome-Preferences-Desktop-Accessibility-48_55418.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.WindowsAPICodePack, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\WindowsAPICodePack-Core.1.1.1\lib\Microsoft.WindowsAPICodePack.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAPICodePack.Shell, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\WindowsAPICodePack-Shell.1.1.1\lib\Microsoft.WindowsAPICodePack.Shell.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -70,7 +76,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AsyncObservCollect.cs" />
     <Compile Include="ControlDoubleClickBehavior.cs" />
+    <Compile Include="FileWatcherEvents.cs" />
     <Compile Include="ShowSystemMenuBehavior.cs" />
     <Compile Include="SystemMenuManager.cs" />
     <Compile Include="WindowResizeBehavior.cs" />
@@ -78,6 +86,7 @@
     <Compile Include="WindowMinimizeCommand.cs" />
     <Compile Include="WindowCloseCommand.cs" />
     <Compile Include="WindowDragBehavior.cs" />
+    <Compile Include="WPFControlWriter.cs" />
     <Page Include="CommandPanel.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

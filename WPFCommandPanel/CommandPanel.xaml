@@ -106,9 +106,9 @@
                         Margin="0 0 0 10"
                         Click="CreatePageReport_Click"/>
                     <Button Grid.Row="9"
-                        Content="Stop"
+                        Content="FindReplace"
                         Margin="0 0 0 10"
-                        Click="QuitProcess"/>
+                        Click="FindReplace_Click"/>
                 </Grid>
         </GroupBox>
         <GroupBox Grid.Column="1" 
