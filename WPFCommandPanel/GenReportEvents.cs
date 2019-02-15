@@ -107,6 +107,12 @@ namespace WPFCommandPanel
                 QuitThread = false;
                 return;
             }
+
+            if(course == null || course.CourseCode == null)
+            {
+                e.Result = "Could not find course. ID was entered wrong or canvas needs time to cool down ...\n";
+                return;
+            }
             A11yParser ParseForA11y = new A11yParser();
             MediaParser ParseForMedia = new MediaParser();
 
