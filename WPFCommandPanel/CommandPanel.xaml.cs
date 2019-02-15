@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.IO;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Support.UI;
 using System.Collections.ObjectModel;
 using ReportGenerators;
@@ -26,7 +27,8 @@ namespace WPFCommandPanel
         //Collection of FileDisplay objects that will be displayed in the panel
         public ObservableCollection<FileDisplay> file_paths = new AsyncObservableCollection<FileDisplay>();
         //Allows the program to control a single browser through multiple events and commands
-        public ChromeDriver chrome;
+        //public ChromeDriver chrome;
+        public FirefoxDriver chrome;
         public WebDriverWait wait;
         //Flag to quit a given opperation. Should add checks for it in various places so it can jsut end the event or funciton.
         public bool QuitThread = false;
@@ -80,7 +82,21 @@ namespace WPFCommandPanel
             ReportList.ItemsSource = file_paths;
             ReportList.DisplayMemberPath = "DisplayName";
             ReportList.SelectedValuePath = "FullName";
-            HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+            try
+            {
+                HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+            }
+            catch
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    Run run = new Run("Error loading HighScore ...\n")
+                    {
+                        Foreground = System.Windows.Media.Brushes.Red
+                    };
+                    TerminalOutput.Inlines.Add(run);
+                });
+            }
             //PageParser = new PageReviewer();
         }
         
