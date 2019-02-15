@@ -27,29 +27,38 @@ namespace WPFCommandPanel
         }
         public void FileWatcher_Renamed(object sender, System.IO.RenamedEventArgs e)
         {
-            //If it was renamed we need to delete old one and create new one with new path
-            if (!e.FullPath.Contains(".xlsx"))
-            {
-                return;
-            }
-            if (e.Name == e.OldName)
-            {
-                return;
-            }
-            if (!e.OldName.Contains(".xlsx"))
-            {   //Excel for some reason creates a .tmp file everytime you save the excel document and then renames that to the correct name
-                //This causes this event to be run even though it is not needed, so just return in that case
-                return;
-            }
+            /*
             try
             {
+                //If it was renamed we need to delete old one and create new one with new path
+                if (!e.FullPath.Contains(".xlsx"))
+                {
+                    return;
+                }
+                if (e.Name == e.OldName)
+                {
+                    return;
+                }
+                if (!e.OldName.Contains(".xlsx"))
+                {   //Excel for some reason creates a .tmp file everytime you save the excel document and then renames that to the correct name
+                    //This causes this event to be run even though it is not needed, so just return in that case
+                    return;
+                }
                 file_paths.Remove(file_paths.FirstOrDefault(f => f.FullName == e.OldFullPath));
                 file_paths.Add(new FileDisplay(e.FullPath));
             }
             catch
             {
-                Console.WriteLine("Failed to register file rename...");
+                Dispatcher.Invoke(() =>
+                {
+                    System.Windows.Documents.Run run = new System.Windows.Documents.Run("Failed to rename file...")
+                    {
+                        Foreground = System.Windows.Media.Brushes.Red
+                    };
+                    TerminalOutput.Inlines.Add(run);
+                });
             }
+            */
         }
     }
 }
