@@ -13,6 +13,7 @@ using System.Management.Automation;
 using My.SeleniumExtentions;
 using My.StringExtentions;
 using System.Text.RegularExpressions;
+using OpenQA.Selenium.Firefox;
 
 namespace WPFCommandPanel
 {
@@ -28,24 +29,14 @@ namespace WPFCommandPanel
         }
         private void OpenBrowser(object sender, DoWorkEventArgs e)
         {
-            //Open the browser to be controlled
-            var chromeDriverService = ChromeDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
-            chromeDriverService.HideCommandPromptWindow = true;
-            var chromeOptions = new ChromeOptions();
-            chromeOptions.AddArguments("user-data-dir=" + Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Google\Chrome\User Data",
-                                        "no-sandbox");
-
-            try
-            {
-                chrome = new ChromeDriver(chromeDriverService, chromeOptions, TimeSpan.FromMinutes(3));
-                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 10));
-            }
-            catch
-            {
-                Console.WriteLine("Failed to open browser with profile, check if Chrome is already open. Opening default chrome...");
-                chrome = new ChromeDriver(chromeDriverService);
-                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 1));
-            }
+            var manager = new FirefoxProfileManager();
+            var ffProfile = manager.GetProfile("default");
+            var fds = FirefoxDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+            fds.HideCommandPromptWindow = true;
+            var options = new FirefoxOptions();
+            options.Profile = ffProfile;
+            chrome = new FirefoxDriver(fds, options);
+            wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
         }
 
         private void Canvas_Click(object sender, EventArgs e)
@@ -71,9 +62,13 @@ namespace WPFCommandPanel
             if (chrome == null)
             {
                 //Open the browser to be controlled
-                var chromeDriverService = ChromeDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
-                chromeDriverService.HideCommandPromptWindow = true;
-                chrome = new ChromeDriver(chromeDriverService);
+                var manager = new FirefoxProfileManager();
+                var ffProfile = manager.GetProfile("default");
+                var fds = FirefoxDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+                fds.HideCommandPromptWindow = true;
+                var options = new FirefoxOptions();
+                options.Profile = ffProfile;
+                chrome = new FirefoxDriver(fds, options);
                 wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
             }
             chrome.Url = "https://byu.instructure.com/courses/1026";
@@ -195,7 +190,7 @@ namespace WPFCommandPanel
                         chrome.ExecuteScript("window.scrollTo(0,document.body.scrollHeight);");
                         wait.Until(c => c.FindElement(By.CssSelector("button.save_quiz_button"))).Click();
                     }
-                    else if (chrome.Url.Contains("assignment"))
+                    else if (chrome.Url.Contains("assignments"))
                     {
                         wait.Until(c => c.SwitchTo().Frame(c.FindElement(By.Id("assignment_description_ifr"))));
                         chrome.ExecuteScript("var el = document.querySelector(\"img\"); if(el){el.setAttribute('alt','');}");
@@ -241,7 +236,7 @@ namespace WPFCommandPanel
                     });
                     Dispatcher.Invoke(() =>
                     {
-                        Run run = new Run($"\nUrl: {chrome.Url}")
+                        Run run = new Run($"\nUrl: {chrome?.Url}")
                         {
                             Foreground = System.Windows.Media.Brushes.Red
                         };
@@ -249,7 +244,7 @@ namespace WPFCommandPanel
                     });
                     Dispatcher.Invoke(() =>
                     {
-                        Run run = new Run($"\nID: {store.id}")
+                        Run run = new Run($"\nID: {store?.id}")
                         {
                             Foreground = System.Windows.Media.Brushes.Red
                         };
@@ -257,7 +252,7 @@ namespace WPFCommandPanel
                     });
                     Dispatcher.Invoke(() =>
                     {
-                        Run run = new Run($"\nText: {store.text}")
+                        Run run = new Run($"\nText: {store?.text}")
                         {
                             Foreground = System.Windows.Media.Brushes.Red
                         };
@@ -265,7 +260,7 @@ namespace WPFCommandPanel
                     });
                     Dispatcher.Invoke(() =>
                     {
-                        Run run = new Run($"\nClassList: {String.Join(", ", store.class_list)}")
+                        Run run = new Run($"\nClassList: {String.Join(", ", store?.class_list)}")
                         {
                             Foreground = System.Windows.Media.Brushes.Red
                         };
@@ -273,7 +268,7 @@ namespace WPFCommandPanel
                     });
                     Dispatcher.Invoke(() =>
                     {
-                        Run run = new Run("\n" + ex.Message)
+                        Run run = new Run("\n" + ex?.Message + "\n")
                         {
                             Foreground = System.Windows.Media.Brushes.Red
                         };
