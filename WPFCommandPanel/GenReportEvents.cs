@@ -56,11 +56,7 @@ namespace WPFCommandPanel
                 ?.ToString();
                 return domain;
             });
-            if (QuitThread)
-            {
-                QuitThread = false;
-                return;
-            }
+            
             if (checkedDomain == null)
             {
                 this.Dispatcher.Invoke(() =>
