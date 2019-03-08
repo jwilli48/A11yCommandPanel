@@ -78,11 +78,7 @@ namespace WPFCommandPanel
                 return;
             }
             CanvasApi.ChangeDomain(checkedDomain);
-            if (QuitThread)
-            {
-                QuitThread = false;
-                return;
-            }
+            
             CourseInfo course;
             bool directory = false;
             LinkParser ParseForLinks = null; //Need to declare this early as it is only set if it is a directory
@@ -98,11 +94,6 @@ namespace WPFCommandPanel
                 directory = true;
                 ParseForLinks = new LinkParser(course.CourseIdOrPath);
             }
-            if (QuitThread)
-            {
-                QuitThread = false;
-                return;
-            }
 
             if(course == null || course.CourseCode == null)
             {
@@ -114,11 +105,6 @@ namespace WPFCommandPanel
 
             Parallel.ForEach(course.PageHtmlList, page =>
             {
-                if (QuitThread)
-                {
-                    QuitThread = false;
-                    return;
-                }
                 ParseForA11y.ProcessContent(page);
                 ParseForMedia.ProcessContent(page);
                 if (directory)
@@ -126,11 +112,7 @@ namespace WPFCommandPanel
                     ParseForLinks.ProcessContent(page);
                 }
             });
-            if (QuitThread)
-            {
-                QuitThread = false;
-                return;
-            }
+           
             var file_name_extention = ((CanvasApi.CurrentDomain == "Directory") ? System.IO.Path.GetPathRoot(text) + "Drive" : CanvasApi.CurrentDomain).Replace(":\\", "");
             CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode.Replace(",", "").Replace(":", "")}_{file_name_extention}.xlsx");
             GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks?.Data);

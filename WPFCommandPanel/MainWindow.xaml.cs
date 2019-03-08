@@ -30,7 +30,7 @@ namespace WPFCommandPanel
             InitializeComponent();
             AppWindow = this;
             
-            if (!(new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\MASTER_CanvasApiCreds.json").Exists))
+            /*if (!(new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\MASTER_CanvasApiCreds.json").Exists))
             {
                 ShowPage.Navigate(new LoginMasterCourses());
             }
@@ -43,10 +43,10 @@ namespace WPFCommandPanel
                 ShowPage.Navigate(new LoginBYUOnlineCanvas());
             }
             else
-            {
+            {*/
                 CommandPanelObj = new CommandPanel();
                 ShowPage.Navigate(CommandPanelObj);
-            }
+            //}
         }
     }
 }

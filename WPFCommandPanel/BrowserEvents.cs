@@ -35,7 +35,7 @@ namespace WPFCommandPanel
             fds.HideCommandPromptWindow = true;
             var options = new FirefoxOptions();
             options.Profile = ffProfile;
-            chrome = new FirefoxDriver(fds, options);
+            chrome = new FirefoxDriver(fds, options, new TimeSpan(0,2,0));
             wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
         }
 
@@ -69,7 +69,7 @@ namespace WPFCommandPanel
                 var options = new FirefoxOptions();
                 options.Profile = ffProfile;
                 chrome = new FirefoxDriver(fds, options);
-                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 5));
+                wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 10));
             }
             chrome.Url = "https://byu.instructure.com/courses/1026";
         }
@@ -126,6 +126,7 @@ namespace WPFCommandPanel
                 return s;
             }
         }
+        
         private void CanvasRalt(object sender, DoWorkEventArgs e)
         {
             var s = new System.Diagnostics.Stopwatch();
@@ -152,6 +153,28 @@ namespace WPFCommandPanel
             StoreWebElement store = new StoreWebElement();
             for (int i = 0; i < number_of_modules; i++)
             {
+                if(i != 0 && (i % 10) == 0)
+                {
+                    chrome.Quit();
+                    var manager = new FirefoxProfileManager();
+                    var ffProfile = manager.GetProfile("default");
+                    var fds = FirefoxDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+                    fds.HideCommandPromptWindow = true;
+                    var options = new FirefoxOptions();
+                    options.Profile = ffProfile;
+                    chrome = new FirefoxDriver(fds, options, new TimeSpan(0, 2, 0));
+                    wait = new WebDriverWait(chrome, new TimeSpan(0, 0, 10));
+                    chrome.Url = home_page_url;
+                    LoginToByu();
+                    System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+                    sw.Start();
+                    while(true)
+                    {
+                        if (sw.ElapsedMilliseconds > 5000)
+                            break;
+                    }
+                    //chrome.Url = home_page_url;
+                }
                 Dispatcher.Invoke(() =>
                 {
                     TerminalOutput.Inlines.Remove(TerminalOutput.Inlines.LastInline);
@@ -282,12 +305,33 @@ namespace WPFCommandPanel
                         };
                         TerminalOutput.Inlines.Add(run);
                     });
-                    if (chrome.isAlertPresent())
+                    try
                     {
-                        chrome.SwitchTo().Alert().Dismiss();
-                        chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
+                        if (chrome.isAlertPresent())
+                        {
+                            chrome.SwitchTo().Alert().Dismiss();
+                            chrome.SwitchTo().Window(chrome.CurrentWindowHandle);
+                        }
                     }
-                    chrome.Url = home_page_url;
+                    catch
+                    {
+                        //do nothing
+                    }
+                    try
+                    {
+                        chrome.Url = home_page_url;
+                    }
+                    catch
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            Run run = new Run("Program broke and will not run\n")
+                            {
+                                Foreground = System.Windows.Media.Brushes.Red
+                            };
+                            TerminalOutput.Inlines.Add(run);
+                        });
+                    }
                 }
             }
             Dispatcher.Invoke(() =>
@@ -301,20 +345,10 @@ namespace WPFCommandPanel
         }
         private void BuzzRalt(object sender, DoWorkEventArgs e)
         {
-            if (QuitThread)
-            {
-                QuitThread = false;
-                return;
-            }
             //Get number of modules
             var number_of_modules = chrome.FindElementsByCssSelector("button[class*=\"glyphicon-option\"]").Count();
             for (int i = 0; i < number_of_modules; i++)
             {
-                if (QuitThread)
-                {
-                    QuitThread = false;
-                    return;
-                }
                 try
                 {
                     //Open moudle options
@@ -332,11 +366,6 @@ namespace WPFCommandPanel
                             return null;
                         }
                     });
-                    if (QuitThread)
-                    {
-                        QuitThread = false;
-                        return;
-                    }
                     //Get image
                     var image = wait.Until(c => c.FindElement(By.CssSelector("img[class*='fr-draggable']")));
                     //Clear title if it exists
@@ -359,11 +388,6 @@ namespace WPFCommandPanel
                             return null;
                         }
                     }).Click();
-                    if (QuitThread)
-                    {
-                        QuitThread = false;
-                        return;
-                    }
                     //Clear the text field
                     wait.Until(c =>
                     {
@@ -385,11 +409,6 @@ namespace WPFCommandPanel
 
                     try
                     {
-                        if (QuitThread)
-                        {
-                            QuitThread = false;
-                            return;
-                        }
                         //Check for pop up
                         wait.Timeout = new TimeSpan(0, 0, 1);
                         wait.Until(c =>
@@ -419,11 +438,6 @@ namespace WPFCommandPanel
                     chrome.FindElementsByTagName("button").Where(el => el.Text.Contains("Save")).First().Click();
                     try
                     {
-                        if (QuitThread)
-                        {
-                            QuitThread = false;
-                            return;
-                        }
                         wait.Timeout = new TimeSpan(0, 0, 1);
                         wait.Until(c =>
                         {
@@ -457,7 +471,7 @@ namespace WPFCommandPanel
             worker.DoWork += LoginToByu;
             worker.RunWorkerAsync();
         }
-        private void LoginToByu(object sender, DoWorkEventArgs e)
+        private void LoginToByu(object sender = null, DoWorkEventArgs e = null)
         {
             string username = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\Credentials\MyByuUserName.txt").Replace("\n", "").Replace("\r", "");
 
