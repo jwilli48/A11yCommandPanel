@@ -170,10 +170,9 @@ namespace WPFCommandPanel
                     sw.Start();
                     while(true)
                     {
-                        if (sw.ElapsedMilliseconds > 5000)
+                        if (sw.ElapsedMilliseconds > 6000)
                             break;
                     }
-                    //chrome.Url = home_page_url;
                 }
                 Dispatcher.Invoke(() =>
                 {
