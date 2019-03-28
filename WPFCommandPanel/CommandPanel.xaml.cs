@@ -124,11 +124,6 @@ namespace WPFCommandPanel
                 Collection<PSObject> results = posh.Invoke();
                 foreach(var obj in results)
                 {
-                    if (QuitThread)
-                    {
-                        QuitThread = false;
-                        return;
-                    }
                     Run run = new Run("Report:\n")
                     {
                         Foreground = System.Windows.Media.Brushes.Cyan

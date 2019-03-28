@@ -78,7 +78,8 @@ namespace WPFCommandPanel
                 return;
             }
             CanvasApi.ChangeDomain(checkedDomain);
-            
+            CanvasApi.ResetApiCreds();
+
             CourseInfo course;
             bool directory = false;
             LinkParser ParseForLinks = null; //Need to declare this early as it is only set if it is a directory
