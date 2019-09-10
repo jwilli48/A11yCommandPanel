@@ -78,7 +78,6 @@ namespace WPFCommandPanel
                 return;
             }
             CanvasApi.ChangeDomain(checkedDomain);
-            CanvasApi.ResetApiCreds();
 
             CourseInfo course;
             bool directory = false;
