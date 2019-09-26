@@ -480,8 +480,8 @@ namespace WPFCommandPanel
             var password = posh.Streams.Information[0].ToString();
             if (chrome.Url.Contains("instructure") || chrome.Url.Contains("cas"))
             {
-                wait.Until(c => c.FindElement(By.Id("netid"))).ReturnClear().SendKeys(username);
-                wait.Until(c => c.FindElement(By.CssSelector("input#password"))).ReturnClear().SendKeys(password);
+                wait.Until(c => c.FindElement(By.Id("username"))).ReturnClear().SendKeys(username);
+                wait.Until(c => c.FindElement(By.Id("password"))).ReturnClear().SendKeys(password);
                 wait.Until(c => c.FindElement(By.CssSelector("input[value*=\"Sign\"]"))).Submit();
             }
             else
