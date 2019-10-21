@@ -25,28 +25,33 @@ namespace WPFCommandPanel
         public static MainWindow AppWindow;
         //Not really needed to have this reference but if we want to add more tabs / pages then we can store the old pages so we don't lose any data from them.
         public static CommandPanel CommandPanelObj;
+        public static A11yViewer a11YViewer;
+        public static A11yRepair a11YRepair;
+
         public MainWindow()
         {
             InitializeComponent();
             AppWindow = this;
             
-            /*if (!(new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\MASTER_CanvasApiCreds.json").Exists))
-            {
-                ShowPage.Navigate(new LoginMasterCourses());
-            }
-            else if(!(new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\BYU_CanvasApiCreds.json").Exists))
-            {
-                ShowPage.Navigate(new LoginTestCanvas());
-            }
-            else if(!(new FileInfo(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\TEST_CanvasApiCreds.json").Exists))
-            {
-                ShowPage.Navigate(new LoginBYUOnlineCanvas());
-            }
-            else
-            {*/
-                CommandPanelObj = new CommandPanel();
-                ShowPage.Navigate(CommandPanelObj);
-            //}
+            CommandPanelObj = new CommandPanel();
+            a11YViewer = new A11yViewer();
+            a11YRepair = new A11yRepair();
+            ShowPage.Navigate(CommandPanelObj);
+        }
+
+        private void SwitchA11yReview(object sender, RoutedEventArgs e)
+        {
+            ShowPage.Navigate(CommandPanelObj);
+        }
+
+        private void SwitchA11yViewer(object sender, RoutedEventArgs e)
+        {
+            ShowPage.Navigate(a11YViewer);
+        }
+
+        private void SwitchA11yRepair(object sender, RoutedEventArgs e)
+        {
+            ShowPage.Navigate(a11YRepair);
         }
     }
 }
