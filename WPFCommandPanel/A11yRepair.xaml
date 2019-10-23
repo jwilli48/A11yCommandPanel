@@ -393,20 +393,45 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="125"/>
+                            <ColumnDefinition Width="100"/>
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0"
                                 Margin="2"
                                 Click="Save_Button"
                                 Background="LightGray"
                                 Foreground="Black">
-                            Save Report
+                            Save Json Report
                         </Button>
                         <Button Grid.Column="1"
+                                Margin="2"
+                                Click="Preview_Button"
+                                Background="LightGray"
+                                Foreground="Black">
+                            Preview Changes
+                        </Button>
+                        <Button Grid.Column="2"
                                 Margin="2"
                                 Click="SaveIssue_Button"
                                 Background="LightGray"
                                 Foreground="Black">
-                            Save Issue
+                            Save Edit To File
+                        </Button>
+                        <Button Grid.Column="3"
+                                Margin="2"
+                                Click="OpenHTML_Button"
+                                Background="LightGray"
+                                Foreground="Black">
+                            Open Current HTML
+                        </Button>
+                        <Button Grid.Column="4"
+                                Margin="2"
+                                Click="RefreshNode_Button"
+                                Background="LightGray"
+                                Foreground="Black"
+                                Name="RefreshButton">
+                            Refresh Issue
                         </Button>
                     </Grid>
                 </Grid>

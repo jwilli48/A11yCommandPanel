@@ -9,6 +9,7 @@ using System.IO;
 using System.ComponentModel;
 using ReportGenerators;
 using My.CanvasApi;
+using System.Management.Automation;
 
 namespace WPFCommandPanel
 {
@@ -101,7 +102,28 @@ namespace WPFCommandPanel
                 }
                 else
                 {
-                    //Just send it in as a string path
+                    //Just send it in as a string path after running basic find replace on directory
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        Run run = new Run($"Running basic Find Replace on directory\n")
+                        {
+                            Foreground = System.Windows.Media.Brushes.Green
+                        };
+                        TerminalOutput.Inlines.Add(run);
+                    });
+                    var script = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\FindReplace.ps1");
+                    script = "param($path)process{\n" + script + "\n}";
+                    var posh = PowerShell.Create();
+                    posh.AddScript(script).AddArgument(text);
+                    posh.Invoke();
+                    Dispatcher.Invoke(() =>
+                    {
+                        Run run = new Run($"Find Replace on {text} finished.\nBack up can be found at {Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\COURSE_BACKUP"}\n")
+                        {
+                            Foreground = System.Windows.Media.Brushes.Cyan
+                        };
+                        TerminalOutput.Inlines.Add(run);
+                    });
                     course = new CourseInfo(text);
                     directory = true;
                     ParseForLinks = new LinkParser(course.CourseIdOrPath);
