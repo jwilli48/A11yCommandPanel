@@ -117,23 +117,13 @@ namespace WPFCommandPanel
                     switch (row.DescriptiveError)
                     {
                         case "Non-Descriptive Link":
-                            curNode = curPage.Doc.DocumentNode.SelectSingleNode($"//a[contains(text(),'{row.Notes.Split('\n').LastOrDefault()}')]");
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         case "JavaScript Link":
-                            var list = curPage.Doc.DocumentNode.SelectNodes("//a").Where(el => el.OuterHtml == row.Notes);
-                            if (list.Count() > 1)
-                            {
-                                System.Windows.MessageBox.Show("Found more then one match, fix one then reselect issue to do next");
-                            }
-                            curNode = list.FirstOrDefault();
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         case "Broken Link":
-                            var list2 = curPage.Doc.DocumentNode.SelectNodes("//a").Where(el => el.OuterHtml == row.Notes);
-                            if (list2.Count() > 1)
-                            {
-                                System.Windows.MessageBox.Show("Found more then one match, fix one then reselect issue to do next");
-                            }
-                            curNode = list2.FirstOrDefault();
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         default:
                             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
@@ -143,18 +133,11 @@ namespace WPFCommandPanel
                 case "Semantics":
                     switch (row.DescriptiveError)
                     {
-                        case "Missing title/label":
-                            string id = row.Notes.CleanSplit("\n").LastOrDefault().CleanSplit(" ").LastOrDefault();
-                            curNode = curPage.Doc.DocumentNode.SelectNodes("//iframe").Where(el => el.OuterHtml.Contains(id)).FirstOrDefault();
+                        case "Missing title/label":;
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         case "Improper Headings":
-                            var list2 = curPage.Doc.DocumentNode.SelectNodes("//h1 | //h2 | //h3 | //h4 | //h5 | //h6")
-                                .Where(el => el.OuterHtml == row.Notes);
-                            if (list2.Count() > 1)
-                            {
-                                System.Windows.MessageBox.Show("Found more then one match, fix one then reselect issue to do next");
-                            }
-                            curNode = list2.FirstOrDefault();
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         case "Bad use of <i> and/or <b>":
                             var ibList = curPage.Doc.DocumentNode.SelectNodes("//i | //b");
@@ -173,20 +156,10 @@ namespace WPFCommandPanel
                     switch (row.DescriptiveError)
                     {
                         case "No Alt Attribute":
-                            var list2 = curPage.Doc.DocumentNode.SelectNodes("//img").Where(el => el.OuterHtml == row.Notes);
-                            if (list2.Count() > 1)
-                            {
-                                System.Windows.MessageBox.Show("Found more then one match, fix one then reselect issue to do next");
-                            }
-                            curNode = list2.FirstOrDefault();
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         case "Non-Descriptive alt tags":
-                            var list = curPage.Doc.DocumentNode.SelectNodes($"//img[@alt,'{row.Notes}']");
-                            if (list.Count() > 1)
-                            {
-                                System.Windows.MessageBox.Show("Found more then one match, fix one then reselect issue to do next");
-                            }
-                            curNode = list.FirstOrDefault();
+                            curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         default:
                             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
@@ -199,12 +172,10 @@ namespace WPFCommandPanel
                         case "Transcript Needed":
                             if(row.Notes.Contains("Video number"))
                             {
-                                int frameIndex = int.Parse(row.Notes.CleanSplit(" ")[2]) - 1;
-                                curNode = curPage.Doc.DocumentNode.SelectNodes("//iframe")[frameIndex];
+                                curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             }else if(row.Notes.Contains("BrightCove video with id"))
                             {
-                                string id = row.Notes.CleanSplit("\n").LastOrDefault();
-                                curNode = curPage.Doc.DocumentNode.SelectSingleNode($"//*[@id='{id}']");
+                                curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             }
                             break;
                         default:
@@ -220,22 +191,19 @@ namespace WPFCommandPanel
                 case "Misc":
                     curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                     break;
-                case "Color":
-                    string text = row.Notes.CleanSplit('\n')[1];
-                    curNode = curPage.Doc.DocumentNode.SelectSingleNode($"//*[text()[contains(.,{text})]]");
+                case "Color":                   
+                    curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                     break;
                 case "Keyboard":
-                    var nodeList = curPage.Doc.DocumentNode.SelectNodes("//*[@onclick]");
-                    if(nodeList.Count > 1)
-                    {
-                        System.Windows.MessageBox.Show("Found more then one match, fix one then reselect issue to do next");
-                    }
-                    curNode = nodeList.FirstOrDefault();
+                    curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                     break;
                 default:
                     curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                     break;
             }
+
+            browser.QueueScriptCall($"var el = document.evaluate('{row.html}',document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.focus(); " +
+                $"el.style.backgroundColor = '#FDFF47';");
             using (TidyManaged.Document my_doc = Document.FromString(curNode.OuterHtml))
             {
                 my_doc.ShowWarnings = false;
