@@ -90,7 +90,7 @@ namespace WPFCommandPanel
         }
         private DataToParse curPage;
         private HtmlNode curNode;
-        private void IssueGrid_Selected(object sender, SelectedCellsChangedEventArgs e)
+        private void SetCurrentNode()
         {
             A11yData row = (A11yData)IssueGrid.SelectedItem;
             if (row == null)
@@ -103,7 +103,6 @@ namespace WPFCommandPanel
             }
             // TODO: Save on issue change
             var url = (directory.Text + "\\" + row.Location.Split('/').LastOrDefault());
-            browser.Url = url;
             string html;
             using (StreamReader r = new StreamReader(url))
             {
@@ -128,12 +127,13 @@ namespace WPFCommandPanel
                         default:
                             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                             break;
-                    }                   
+                    }
                     break;
                 case "Semantics":
                     switch (row.DescriptiveError)
                     {
-                        case "Missing title/label":;
+                        case "Missing title/label":
+                            ;
                             curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             break;
                         case "Improper Headings":
@@ -150,7 +150,7 @@ namespace WPFCommandPanel
                         default:
                             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                             break;
-                    }                    
+                    }
                     break;
                 case "Image":
                     switch (row.DescriptiveError)
@@ -170,10 +170,11 @@ namespace WPFCommandPanel
                     switch (row.DescriptiveError)
                     {
                         case "Transcript Needed":
-                            if(row.Notes.Contains("Video number"))
+                            if (row.Notes.Contains("Video number"))
                             {
                                 curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
-                            }else if(row.Notes.Contains("BrightCove video with id"))
+                            }
+                            else if (row.Notes.Contains("BrightCove video with id"))
                             {
                                 curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                             }
@@ -182,7 +183,7 @@ namespace WPFCommandPanel
                             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                             break;
                     }
-                    
+
                     break;
                 case "Table":
                     int tableIndex = int.Parse(row.Notes.Split(':')[0].Split(' ').LastOrDefault()) - 1;
@@ -191,7 +192,7 @@ namespace WPFCommandPanel
                 case "Misc":
                     curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                     break;
-                case "Color":                   
+                case "Color":
                     curNode = curPage.Doc.DocumentNode.SelectSingleNode(row.html);
                     break;
                 case "Keyboard":
@@ -201,9 +202,11 @@ namespace WPFCommandPanel
                     curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
                     break;
             }
-
-            browser.QueueScriptCall($"var el = document.evaluate('{row.html}',document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.focus(); " +
-                $"el.style.backgroundColor = '#FDFF47';");
+            if(curNode == null)
+            {
+                System.Windows.MessageBox.Show("Issue was not found, report data is old. You probably want to generate a new report.");
+                return;
+            }
             using (TidyManaged.Document my_doc = Document.FromString(curNode.OuterHtml))
             {
                 my_doc.ShowWarnings = false;
@@ -214,12 +217,30 @@ namespace WPFCommandPanel
                 my_doc.IndentAttributes = false;
                 my_doc.IndentCdata = true;
                 my_doc.AddVerticalSpace = false;
-                my_doc.WrapAt = 200;
+                my_doc.WrapAt = 0;
                 my_doc.OutputBodyOnly = AutoBool.Yes;
                 my_doc.IndentWithTabs = true;
-                my_doc.CleanAndRepair();           
+                my_doc.CleanAndRepair();
                 editor.Text = my_doc.Save();
-            }            
+                editor.ScrollToHome();
+            }
+            var style = curNode.GetAttributeValue("style", "");
+            if (style == "")
+            {
+                style = "border: 5px solid red";
+            }
+            else
+            {
+                style = "; border: 5px solid red;";
+            }
+            curNode.Id = "focus_this";
+            curNode.SetAttributeValue("style", style);
+            browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
+            browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
+        }
+        private void IssueGrid_Selected(object sender, SelectedCellsChangedEventArgs e)
+        {
+            SetCurrentNode();
         }
 
         private void editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -234,9 +255,22 @@ namespace WPFCommandPanel
                         return;
                     }
                     var newNode = HtmlNode.CreateNode(editor.Text);
+                    var style = newNode.GetAttributeValue("style", "");
+                    if (style == "")
+                    {
+                        style = "border: 5px solid red";
+                    }
+                    else
+                    {
+                        style = "; border: 5px solid red;";
+                    }
+                    newNode.Id = "focus_this";
+                    newNode.SetAttributeValue("style", style);
                     curNode.ParentNode.ReplaceChild(newNode, curNode);
                     curNode = newNode;
-                    browser.LoadHtml(curPage.Doc.DocumentNode.OuterHtml);
+                    browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
+                    browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
+
                     e.Handled = true;                    
                 }
                 if(e.Key == Key.Enter)
@@ -246,10 +280,15 @@ namespace WPFCommandPanel
                         e.Handled = true;
                         return;
                     }
+                    var newNode = HtmlNode.CreateNode(editor.Text);
+                    curNode.ParentNode.ReplaceChild(newNode, curNode);
+                    curNode = newNode;
                     int index = IssueGrid.SelectedIndex;
                     data[index].Completed = true;
                     curPage.Doc.Save(curPage.Location);
-                    ViewSource.View.Refresh();            
+                    ViewSource.View.Refresh();
+                    browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
+                    browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
                     e.Handled = true;
                 }
             }
@@ -304,230 +343,46 @@ namespace WPFCommandPanel
                 e.Handled = true;
                 return;
             }
+            var newNode = HtmlNode.CreateNode(editor.Text);
+            curNode.ParentNode.ReplaceChild(newNode, curNode);
+            curNode = newNode;
             int index = IssueGrid.SelectedIndex;
             data[index].Completed = true;
             curPage.Doc.Save(curPage.Location);
             ViewSource.View.Refresh();
+            browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
+            browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
             e.Handled = true;
         }
         private void Preview_Button(object sender, RoutedEventArgs e)
         {
-            if (curPage == null)
+            if (curNode == null)
             {
                 e.Handled = true;
                 return;
             }
             var newNode = HtmlNode.CreateNode(editor.Text);
+            var style = newNode.GetAttributeValue("style", "");
+            if (style == "")
+            {
+                style = "border: 5px solid red";
+            }
+            else
+            {
+                style = "; border: 5px solid red;";
+            }
+            newNode.Id = "focus_this";
+            newNode.SetAttributeValue("style", style);
             curNode.ParentNode.ReplaceChild(newNode, curNode);
             curNode = newNode;
-            browser.LoadHtml(curPage.Doc.DocumentNode.OuterHtml);
+            browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
+            browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
             e.Handled = true;
         }
 
         private void RefreshNode_Button(object sender, RoutedEventArgs e)
         {
-            A11yData row = (A11yData)IssueGrid.SelectedItem;
-            if (row == null)
-            {
-                browser.Url = "";
-                curPage = null;
-                curNode = null;
-                editor.Clear();
-                return;
-            }
-            // TODO: Save on issue change
-            var url = (directory.Text + "\\" + row.Location.Split('/').LastOrDefault());
-            browser.Url = url;
-            string html;
-            using (StreamReader r = new StreamReader(url))
-            {
-                html = r.ReadToEnd();
-            }
-            curPage = new DataToParse(url);
-
-            switch (row.IssueType)
-            {
-                case "Link":
-                    switch (row.DescriptiveError)
-                    {
-                        case "Non-Descriptive Link":
-                            curNode = curPage.Doc.DocumentNode.SelectSingleNode($"//a[contains(text(),'{row.Notes.Split('\n').LastOrDefault()}')]");
-                            break;
-                        case "JavaScript Link":
-                            var list = curPage.Doc.DocumentNode.SelectNodes("//a").Where(el => el.OuterHtml == row.Notes);
-                            if (list.Count() > 1)
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                                RefreshButton.BorderThickness = new Thickness(3);
-                            }else
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                                RefreshButton.BorderThickness = new Thickness(1);
-                            }
-                            curNode = list.FirstOrDefault();
-                            break;
-                        case "Broken Link":
-                            var list2 = curPage.Doc.DocumentNode.SelectNodes("//a").Where(el => el.OuterHtml == row.Notes);
-                            if (list2.Count() > 1)
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                                RefreshButton.BorderThickness = new Thickness(3);
-                            }
-                            else
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                                RefreshButton.BorderThickness = new Thickness(1);
-                            }
-                            curNode = list2.FirstOrDefault();
-                            break;
-                        default:
-                            curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
-                            break;
-                    }
-                    break;
-                case "Semantics":
-                    switch (row.DescriptiveError)
-                    {
-                        case "Missing title/label":
-                            string id = row.Notes.CleanSplit("\n").LastOrDefault().CleanSplit(" ").LastOrDefault();
-                            curNode = curPage.Doc.DocumentNode.SelectNodes("//iframe").Where(el => el.OuterHtml.Contains(id)).FirstOrDefault();
-                            break;
-                        case "Improper Headings":
-                            var list2 = curPage.Doc.DocumentNode.SelectNodes("//h1 | //h2 | //h3 | //h4 | //h5 | //h6")
-                                .Where(el => el.OuterHtml == row.Notes);
-                            if (list2.Count() > 1)
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                                RefreshButton.BorderThickness = new Thickness(3);
-                            }
-                            else
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                                RefreshButton.BorderThickness = new Thickness(1);
-                            }
-                            curNode = list2.FirstOrDefault();
-                            break;
-                        case "Bad use of <i> and/or <b>":
-                            var ibList = curPage.Doc.DocumentNode.SelectNodes("//i | //b");
-                            if (ibList.Count() > 1) 
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                                RefreshButton.BorderThickness = new Thickness(3);
-                            }
-                            else
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                                RefreshButton.BorderThickness = new Thickness(1);
-                            }
-                            curNode = ibList.FirstOrDefault();
-                            break;
-                        default:
-                            curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
-                            break;
-                    }
-                    break;
-                case "Image":
-                    switch (row.DescriptiveError)
-                    {
-                        case "No Alt Attribute":
-                            var list2 = curPage.Doc.DocumentNode.SelectNodes("//img").Where(el => el.OuterHtml == row.Notes);
-                            if (list2.Count() > 1)
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                                RefreshButton.BorderThickness = new Thickness(3);
-                            }
-                            else
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                                RefreshButton.BorderThickness = new Thickness(1);
-                            }
-                            curNode = list2.FirstOrDefault();
-                            break;
-                        case "Non-Descriptive alt tags":
-                            var list = curPage.Doc.DocumentNode.SelectNodes($"//img[@alt,'{row.Notes}']");
-                            if (list.Count() > 1)
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                                RefreshButton.BorderThickness = new Thickness(3);
-                            }
-                            else
-                            {
-                                RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                                RefreshButton.BorderThickness = new Thickness(1);
-                            }
-                            curNode = list.FirstOrDefault();
-                            break;
-                        default:
-                            curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
-                            break;
-                    }
-                    break;
-                case "Media":
-                    switch (row.DescriptiveError)
-                    {
-                        case "Transcript Needed":
-                            if (row.Notes.Contains("Video number"))
-                            {
-                                int frameIndex = int.Parse(row.Notes.CleanSplit(" ")[2]) - 1;
-                                curNode = curPage.Doc.DocumentNode.SelectNodes("//iframe")[frameIndex];
-                            }
-                            else if (row.Notes.Contains("BrightCove video with id"))
-                            {
-                                string id = row.Notes.CleanSplit("\n").LastOrDefault();
-                                curNode = curPage.Doc.DocumentNode.SelectSingleNode($"//*[@id='{id}']");
-                            }
-                            break;
-                        default:
-                            curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
-                            break;
-                    }
-                    break;
-                case "Table":
-                    int tableIndex = int.Parse(row.Notes.Split(':')[0].Split(' ').LastOrDefault()) - 1;
-                    curNode = curPage.Doc.DocumentNode.SelectNodes("//table")[tableIndex];
-                    break;
-                case "Misc":
-                    curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
-                    break;
-                case "Color":
-                    string text = row.Notes.CleanSplit('\n')[1];
-                    curNode = curPage.Doc.DocumentNode.SelectSingleNode($"//*[text()[contains(.,{text})]]");
-                    break;
-                case "Keyboard":
-                    var nodeList = curPage.Doc.DocumentNode.SelectNodes("//*[@onclick]");
-                    if (nodeList.Count > 1)
-                    {
-                        RefreshButton.BorderBrush = System.Windows.Media.Brushes.Yellow;
-                        RefreshButton.BorderThickness = new Thickness(3);
-                    }
-                    else
-                    {
-                        RefreshButton.BorderBrush = System.Windows.Media.Brushes.Gray;
-                        RefreshButton.BorderThickness = new Thickness(1);
-                    }
-                    curNode = nodeList.FirstOrDefault();
-                    break;
-                default:
-                    curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
-                    break;
-            }
-            using (TidyManaged.Document my_doc = Document.FromString(curNode.OuterHtml))
-            {
-                my_doc.ShowWarnings = false;
-                my_doc.Quiet = true;
-                my_doc.OutputXhtml = true;
-                my_doc.OutputXml = true;
-                my_doc.IndentBlockElements = AutoBool.Yes;
-                my_doc.IndentAttributes = false;
-                my_doc.IndentCdata = true;
-                my_doc.AddVerticalSpace = false;
-                my_doc.WrapAt = 200;
-                my_doc.OutputBodyOnly = AutoBool.Yes;
-                my_doc.IndentWithTabs = true;
-                my_doc.CleanAndRepair();
-                editor.Text = my_doc.Save();
-            }
-
+            SetCurrentNode();
         }
 
         private void OpenHTML_Button(object sender, RoutedEventArgs e)
@@ -537,7 +392,12 @@ namespace WPFCommandPanel
                 e.Handled = true;
                 return;
             }
-            MemoryStream str = new MemoryStream(Encoding.UTF8.GetBytes(curPage.Doc.DocumentNode.OuterHtml));
+            editor.WordWrap = false;
+            var newNode = HtmlNode.CreateNode(editor.Text);
+            var textToMatch = Array.ConvertAll(editor.Text.CleanSplit("\r\n"), s => s.Replace("\t",""));
+            curNode.ParentNode.ReplaceChild(newNode, curNode);
+            curNode = newNode;
+            MemoryStream str = new MemoryStream(Encoding.UTF8.GetBytes(curPage.Doc.DocumentNode.OuterHtml));            
             using (TidyManaged.Document my_doc = Document.FromStream(str))
             {
                 my_doc.CharacterEncoding = EncodingType.Utf8;
@@ -550,15 +410,40 @@ namespace WPFCommandPanel
                 my_doc.IndentBlockElements = AutoBool.Yes;
                 my_doc.IndentAttributes = false;
                 my_doc.IndentCdata = true;
-                my_doc.AddVerticalSpace = false;
-                my_doc.WrapAt = 200;
+                my_doc.AddVerticalSpace = false;                
                 my_doc.OutputBodyOnly = AutoBool.Yes;
                 my_doc.IndentWithTabs = true;
-                my_doc.CleanAndRepair();
-                editor.Text = "<body>\n" + my_doc.Save() + "\n</body>";
+                my_doc.WrapAt = 0;
+                my_doc.CleanAndRepair();              
+                editor.Text = "<body>\r\n" + my_doc.Save() + "\r\n</body>";
             }
             str.Close();
-            curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body") ;
+            var compareText = editor.Text.CleanSplit("\r\n");
+            int lineNum = 0;
+            for(int i = 0; i < compareText.Length - textToMatch.Length; i++)
+            {
+                bool foundMatch = false;
+                if(compareText[i].Contains(textToMatch[0]))
+                {
+                    foundMatch = true;
+                    for (int j = 0; j < textToMatch.Length; j++)
+                    {
+                        if (!compareText[i+j].Contains(textToMatch[j]))
+                        {
+                            foundMatch = false;
+                        }
+                    }
+                }
+                if(foundMatch)
+                {
+                    lineNum = i;
+                    break;
+                }
+            }
+            double vertOffset = (editor.TextArea.TextView.DefaultLineHeight) * lineNum;
+            editor.ScrollToVerticalOffset(vertOffset);
+            editor.WordWrap = true;
+            curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
         }
     }
 }

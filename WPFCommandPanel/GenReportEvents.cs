@@ -182,7 +182,7 @@ namespace WPFCommandPanel
                     });
                 }
 
-                e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")}\n";
+                e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")} for {course.PageHtmlList.Count()} pages\n";
             }catch(Exception ex)
             {
                 e.Result = ex.Message + '\n' + ex.ToString() + '\n' + ex.StackTrace;
