@@ -41,7 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EO.Base, Version=19.2.91.0, Culture=neutral, PublicKeyToken=e92353a6bf73fffc, processorArchitecture=MSIL">
-      <HintPath>..\packages\EO.WebBrowser.19.2.91\lib\EO.Base.dll</HintPath>
+      <HintPath>..\packages\EO.Wpf.19.2.91\lib\EO.Base.dll</HintPath>
     </Reference>
     <Reference Include="EO.WebBrowser, Version=19.2.91.0, Culture=neutral, PublicKeyToken=e92353a6bf73fffc, processorArchitecture=MSIL">
       <HintPath>..\packages\EO.WebBrowser.19.2.91\lib\EO.WebBrowser.dll</HintPath>
@@ -51,6 +51,9 @@
     </Reference>
     <Reference Include="EO.WebEngine, Version=19.2.91.0, Culture=neutral, PublicKeyToken=e92353a6bf73fffc, processorArchitecture=MSIL">
       <HintPath>..\packages\EO.WebBrowser.19.2.91\lib\EO.WebEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="EO.Wpf, Version=19.2.91.0, Culture=neutral, PublicKeyToken=e92353a6bf73fffc, processorArchitecture=MSIL">
+      <HintPath>..\packages\EO.Wpf.19.2.91\lib\EO.Wpf.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack, Version=1.11.16.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <HintPath>..\packages\HtmlAgilityPack.1.11.16\lib\Net45\HtmlAgilityPack.dll</HintPath>
@@ -117,6 +120,10 @@
     <Compile Include="FileWatcherEvents.cs" />
     <Compile Include="GenReportEvents.cs" />
     <Compile Include="MyTab.cs" />
+    <Compile Include="OptionsPage.xaml.cs">
+      <DependentUpon>OptionsPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="PanelOptions.cs" />
     <Compile Include="ShowSystemMenuBehavior.cs" />
     <Compile Include="SystemMenuManager.cs" />
     <Compile Include="WindowResizeBehavior.cs" />
@@ -137,22 +144,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Login.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="LoginBYUOnlineCanvas.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="LoginMasterCourses.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="LoginTestCanvas.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -164,22 +155,14 @@
     <Compile Include="CommandPanel.xaml.cs">
       <DependentUpon>CommandPanel.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Login.xaml.cs">
-      <DependentUpon>Login.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="LoginBYUOnlineCanvas.xaml.cs">
-      <DependentUpon>LoginBYUOnlineCanvas.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="LoginMasterCourses.xaml.cs">
-      <DependentUpon>LoginMasterCourses.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="LoginTestCanvas.xaml.cs">
-      <DependentUpon>LoginTestCanvas.xaml</DependentUpon>
-    </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="OptionsPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

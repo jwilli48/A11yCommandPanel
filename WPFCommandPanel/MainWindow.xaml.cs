@@ -27,6 +27,7 @@ namespace WPFCommandPanel
         public static CommandPanel CommandPanelObj;
         public static A11yViewer a11YViewer;
         public static A11yRepair a11YRepair;
+        public static OptionsPage optionsPage;
 
         public MainWindow()
         {
@@ -36,6 +37,7 @@ namespace WPFCommandPanel
             CommandPanelObj = new CommandPanel();
             a11YViewer = new A11yViewer();
             a11YRepair = new A11yRepair();
+            optionsPage = new OptionsPage();
             ShowPage.Navigate(CommandPanelObj);
         }
 
@@ -52,6 +54,10 @@ namespace WPFCommandPanel
         private void SwitchA11yRepair(object sender, RoutedEventArgs e)
         {
             ShowPage.Navigate(a11YRepair);
+        }
+        private void SwitchOptions(object sender, RoutedEventArgs e)
+        {
+            ShowPage.Navigate(optionsPage);
         }
     }
 }
