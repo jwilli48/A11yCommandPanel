@@ -117,6 +117,9 @@
     <Compile Include="BrowserEvents.cs" />
     <Compile Include="ControlDoubleClickBehavior.cs" />
     <Compile Include="DatagridExtensions.cs" />
+    <Compile Include="DraggablePopup.xaml.cs">
+      <DependentUpon>DraggablePopup.xaml</DependentUpon>
+    </Compile>
     <Compile Include="FileWatcherEvents.cs" />
     <Compile Include="GenReportEvents.cs" />
     <Compile Include="MyTab.cs" />
@@ -141,6 +144,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CommandPanel.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="DraggablePopup.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

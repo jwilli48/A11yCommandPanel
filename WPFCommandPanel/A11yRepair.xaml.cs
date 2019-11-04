@@ -20,6 +20,8 @@ using System.Windows.Data;
 using TidyManaged;
 using My.StringExtentions;
 using System.Text;
+using System.Windows.Media.Imaging;
+using System.Windows.Controls.Primitives;
 
 namespace WPFCommandPanel
 {
@@ -385,6 +387,32 @@ namespace WPFCommandPanel
             SetCurrentNode();
         }
 
+        
+        private void OpenImage_Button(object sender, RoutedEventArgs e)
+        {
+            if(curNode?.Name != "img")
+            {
+                return;
+            }            
+            var imagePath = Path.Combine(Path.GetDirectoryName(curPage.Location), curNode.GetAttributeValue("src", null));
+            if(imagePath == null)
+            {
+                System.Windows.MessageBox.Show($"Image source seems to be null");
+            }
+            ImagePopUp.IsOpen = true;
+            try
+            {
+                var bitmap = new BitmapImage(new Uri(imagePath));
+                ImagePopUp.Width = bitmap.Width + 6;
+                ImagePopUp.Height = bitmap.Height + 6;
+                ImagePopUp.DisplayImage.Source = bitmap;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Error opening the image at {imagePath}");
+            }
+        }
+
         private void OpenHTML_Button(object sender, RoutedEventArgs e)
         {
             if (curPage == null)
@@ -444,6 +472,21 @@ namespace WPFCommandPanel
             editor.ScrollToVerticalOffset(vertOffset);
             editor.WordWrap = true;
             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
+        }
+
+        private void CheckBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (curReportFile == null)
+            {
+                e.Handled = true;
+                return;
+            }
+            using (StreamWriter file = new StreamWriter(System.IO.Path.Combine(curReportFile), false))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Formatting = Formatting.Indented;
+                serializer.Serialize(file, data);
+            }
         }
     }
 }
