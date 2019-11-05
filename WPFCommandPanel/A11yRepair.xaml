@@ -441,7 +441,7 @@
                                 Click="OpenImage_Button"
                                 Background="LightGray"
                                 Foreground="Black">
-                            Open Image
+                            View Image
                         </Button>
                                 
                     </Grid>

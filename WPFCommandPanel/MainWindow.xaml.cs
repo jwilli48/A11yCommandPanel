@@ -13,6 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.IO;
+using System.Reflection;
+using Newtonsoft.Json;
 
 namespace WPFCommandPanel
 {
@@ -28,7 +30,7 @@ namespace WPFCommandPanel
         public static A11yViewer a11YViewer;
         public static A11yRepair a11YRepair;
         public static OptionsPage optionsPage;
-
+        public static My.PanelOptions panelOptions;
         public MainWindow()
         {
             InitializeComponent();
@@ -38,6 +40,14 @@ namespace WPFCommandPanel
             a11YViewer = new A11yViewer();
             a11YRepair = new A11yRepair();
             optionsPage = new OptionsPage();
+            string json = "";
+            string path = Assembly.GetEntryAssembly().Location.Contains("source") ? @"C:\Users\jwilli48\Desktop\AccessibilityTools\A11yPanel\options.json" :
+                                System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + @"\options.json";
+            using (StreamReader r = new StreamReader(path))
+            {
+                json = r.ReadToEnd();
+            }
+            panelOptions = JsonConvert.DeserializeObject<My.PanelOptions>(json);
             ShowPage.Navigate(CommandPanelObj);
         }
 
