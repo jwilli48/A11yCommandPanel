@@ -31,7 +31,7 @@ namespace WPFCommandPanel
         {
             var manager = new FirefoxProfileManager();
             var ffProfile = manager.GetProfile("default");
-            var fds = FirefoxDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+            var fds = FirefoxDriverService.CreateDefaultService(MainWindow.panelOptions.FirefoxDriverPath);
             fds.HideCommandPromptWindow = true;
             var options = new FirefoxOptions();
             options.Profile = ffProfile;
@@ -41,17 +41,17 @@ namespace WPFCommandPanel
 
         private void Canvas_Click(object sender, EventArgs e)
         {
-            chrome.Url = "https://byu.instructure.com";
+            chrome.Url = MainWindow.panelOptions.BYUOnlineCreds["BaseUri"];
         }
 
         private void MasterCanvas_Click(object sender, EventArgs e)
         {
-            chrome.Url = "https://byuismastercourses.instructure.com";
+            chrome.Url = MainWindow.panelOptions.BYUMasterCoursesCreds["BaseUri"];
         }
 
         private void TestCanvas_Click(object sender, EventArgs e)
         {
-            chrome.Url = "https://byuistest.instructure.com";
+            chrome.Url = MainWindow.panelOptions.BYUISTestCreds["BaseUri"];
         }
         private void QuitProcess(object sender, EventArgs e)
         {
@@ -64,7 +64,7 @@ namespace WPFCommandPanel
                 //Open the browser to be controlled
                 var manager = new FirefoxProfileManager();
                 var ffProfile = manager.GetProfile("default");
-                var fds = FirefoxDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+                var fds = FirefoxDriverService.CreateDefaultService(MainWindow.panelOptions.FirefoxDriverPath);
                 fds.HideCommandPromptWindow = true;
                 var options = new FirefoxOptions();
                 options.Profile = ffProfile;
@@ -157,7 +157,7 @@ namespace WPFCommandPanel
                     chrome.Quit();
                     var manager = new FirefoxProfileManager();
                     var ffProfile = manager.GetProfile("default");
-                    var fds = FirefoxDriverService.CreateDefaultService(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\Modules\SeleniumTest");
+                    var fds = FirefoxDriverService.CreateDefaultService(MainWindow.panelOptions.FirefoxDriverPath);
                     fds.HideCommandPromptWindow = true;
                     var options = new FirefoxOptions();
                     options.Profile = ffProfile;
@@ -471,13 +471,8 @@ namespace WPFCommandPanel
         }
         private void LoginToByu(object sender = null, DoWorkEventArgs e = null)
         {
-            string username = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\Credentials\MyByuUserName.txt").Replace("\n", "").Replace("\r", "");
-
-            var posh = PowerShell.Create();
-            posh.AddScript("process{$c = Get-Content \"$HOME\\Desktop\\AccessibilityTools\\Credentials\\MyByuPassword.txt\"; $s = $c | ConvertTo-SecureString; Write-Host (New-Object System.Management.Automation.PSCredential -ArgumentList 'asdf', $s).GetNetworkCredential().Password}"
-                );
-            posh.Invoke();
-            var password = posh.Streams.Information[0].ToString();
+            string username = MainWindow.panelOptions.ByuCred["Username"];            
+            var password = MainWindow.panelOptions.ByuCred["Password"];
             if (chrome.Url.Contains("instructure") || chrome.Url.Contains("cas"))
             {
                 wait.Until(c => c.FindElement(By.Id("username"))).ReturnClear().SendKeys(username);

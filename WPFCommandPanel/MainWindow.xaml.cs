@@ -35,11 +35,6 @@ namespace WPFCommandPanel
         {
             InitializeComponent();
             AppWindow = this;
-            
-            CommandPanelObj = new CommandPanel();
-            a11YViewer = new A11yViewer();
-            a11YRepair = new A11yRepair();
-            optionsPage = new OptionsPage();
             string json = "";
             string path = Assembly.GetEntryAssembly().Location.Contains("source") ? @"C:\Users\jwilli48\Desktop\AccessibilityTools\A11yPanel\options.json" :
                                 System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location) + @"\options.json";
@@ -48,6 +43,10 @@ namespace WPFCommandPanel
                 json = r.ReadToEnd();
             }
             panelOptions = JsonConvert.DeserializeObject<My.PanelOptions>(json);
+            CommandPanelObj = new CommandPanel();
+            a11YViewer = new A11yViewer();
+            a11YRepair = new A11yRepair();
+            optionsPage = new OptionsPage();            
             ShowPage.Navigate(CommandPanelObj);
         }
 

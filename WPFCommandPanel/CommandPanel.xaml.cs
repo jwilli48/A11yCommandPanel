@@ -23,7 +23,7 @@ namespace WPFCommandPanel
     public partial class CommandPanel : Page
     {
         //Will watch the folder that will contain the reports
-        public FileSystemWatcher FileWatcher = new FileSystemWatcher(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\ReportGenerators-master\Reports");
+        public FileSystemWatcher FileWatcher;
         //Collection of FileDisplay objects that will be displayed in the panel
         public ObservableCollection<FileDisplay> file_paths = new AsyncObservableCollection<FileDisplay>();
         //Allows the program to control a single browser through multiple events and commands
@@ -68,6 +68,7 @@ namespace WPFCommandPanel
             InitializeComponent();
             //Set all console output to our own writer
             Console.SetOut(new ControlWriter(TerminalOutput));
+            FileWatcher = new FileSystemWatcher(MainWindow.panelOptions.ReportPath);
             //Setup the events for the filewatcher
             this.FileWatcher.EnableRaisingEvents = true;
             this.FileWatcher.Created += new System.IO.FileSystemEventHandler(this.FileWatcher_Created);
@@ -84,7 +85,7 @@ namespace WPFCommandPanel
             ReportList.SelectedValuePath = "FullName";
             try
             {
-                HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+                HighScoreBox.Text = "HighScore: " + File.ReadAllText(MainWindow.panelOptions.HighScorePath);
             }
             catch
             {
@@ -119,7 +120,7 @@ namespace WPFCommandPanel
             using(PowerShell posh = PowerShell.Create())
             {
                 //I was to lazy to rewrite the function into c# and just import the POSH script.
-                string script = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\MoveReports.ps1");
+                string script = File.ReadAllText(MainWindow.panelOptions.PowershellScriptDir + "\\MoveReports.ps1");
                 posh.AddScript(script);
                 Collection<PSObject> results = posh.Invoke();
                 foreach(var obj in results)
@@ -161,7 +162,7 @@ namespace WPFCommandPanel
             {
                 return;
             }
-            var script = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\FindReplace.ps1");
+            var script = File.ReadAllText(MainWindow.panelOptions.PowershellScriptDir + @"\FindReplace.ps1");
             script = "param($path)process{\n" + script + "\n}";
             var posh = PowerShell.Create();
             posh.AddScript(script).AddArgument(file_path);
@@ -169,7 +170,7 @@ namespace WPFCommandPanel
 
             Dispatcher.Invoke(() =>
             {
-                Run run = new Run($"Find Replace on {file_path} finished.\nBack up can be found at {Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\COURSE_BACKUP"}")
+                Run run = new Run($"Find Replace on {file_path} finished.\nBack up can be found at {MainWindow.panelOptions.CourseBackupDir}")
                 {
                     Foreground = System.Windows.Media.Brushes.Cyan
                 };

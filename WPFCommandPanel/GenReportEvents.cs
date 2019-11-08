@@ -111,14 +111,14 @@ namespace WPFCommandPanel
                         };
                         TerminalOutput.Inlines.Add(run);
                     });
-                    var script = File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\PowerShell\FindReplace.ps1");
+                    var script = File.ReadAllText(MainWindow.panelOptions.PowershellScriptDir + @"\FindReplace.ps1");
                     script = "param($path)process{\n" + script + "\n}";
                     var posh = PowerShell.Create();
                     posh.AddScript(script).AddArgument(text);
                     posh.Invoke();
                     Dispatcher.Invoke(() =>
                     {
-                        Run run = new Run($"Find Replace on {text} finished.\nBack up can be found at {Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + @"\AccessibilityTools\COURSE_BACKUP"}\n")
+                        Run run = new Run($"Find Replace on {text} finished.\nBack up can be found at {MainWindow.panelOptions.CourseBackupDir}\n")
                         {
                             Foreground = System.Windows.Media.Brushes.Cyan
                         };
@@ -151,7 +151,8 @@ namespace WPFCommandPanel
                 });
                 A11yParser ParseForA11y = new A11yParser();
                 MediaParser ParseForMedia = new MediaParser();
-                Parallel.ForEach(course.PageHtmlList, page =>
+                var options = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+                Parallel.ForEach(course.PageHtmlList, options, page =>
                 {
                     ParseForA11y.ProcessContent(page);
                     ParseForMedia.ProcessContent(page);
@@ -169,16 +170,16 @@ namespace WPFCommandPanel
                     TerminalOutput.Inlines.Add(run);
                 });
                 var file_name_extention = ((CanvasApi.CurrentDomain == "Directory") ? System.IO.Path.GetPathRoot(text) + "Drive" : CanvasApi.CurrentDomain).Replace(":\\", "");
-                CreateExcelReport GenReport = new CreateExcelReport(Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_{course.CourseCode.Replace(",", "").Replace(":", "")}_{file_name_extention}.xlsx");
+                CreateExcelReport GenReport = new CreateExcelReport(MainWindow.panelOptions.ReportPath + $"\\ARC_{course.CourseCode.Replace(",", "").Replace(":", "")}_{file_name_extention}.xlsx");
                 GenReport.CreateReport(ParseForA11y.Data, ParseForMedia.Data, ParseForLinks?.Data);
                 s.Stop();
                 ParseForMedia.Chrome.Quit();
-                if (ParseForA11y.Data.Count() > int.Parse(File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt")))
+                if (ParseForA11y.Data.Count() > int.Parse(File.ReadAllText(MainWindow.panelOptions.HighScorePath)))
                 {
-                    File.WriteAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt", ParseForA11y.Data.Count().ToString());
+                    File.WriteAllText(MainWindow.panelOptions.HighScorePath, ParseForA11y.Data.Count().ToString());
                     Dispatcher.Invoke(() =>
                     {
-                        HighScoreBox.Text = "HighScore: " + File.ReadAllText(@"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\HIGHSCORE.txt");
+                        HighScoreBox.Text = "HighScore: " + File.ReadAllText(MainWindow.panelOptions.HighScorePath);
                     });
                 }
 
@@ -248,9 +249,7 @@ namespace WPFCommandPanel
         private void CreatePageReport(object sender, DoWorkEventArgs e)
         {
             Console.WriteLine("Creating report...");
-            CreateExcelReport GenReport = new CreateExcelReport(Environment
-                .GetFolderPath(Environment.SpecialFolder.Desktop) +
-                $"\\AccessibilityTools\\ReportGenerators-master\\Reports\\ARC_WebPage.xlsx");
+            CreateExcelReport GenReport = new CreateExcelReport(MainWindow.panelOptions.ReportPath + $"\\ARC_WebPage.xlsx");
             GenReport.CreateReport(PageParser.A11yReviewer.Data, PageParser.MediaReviewer.Data, null);
             PageParser.MediaReviewer.Chrome.Quit();
             PageParser = null;

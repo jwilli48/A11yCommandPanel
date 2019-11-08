@@ -126,7 +126,6 @@
     <Compile Include="OptionsPage.xaml.cs">
       <DependentUpon>OptionsPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="PanelOptions.cs" />
     <Compile Include="ShowSystemMenuBehavior.cs" />
     <Compile Include="SystemMenuManager.cs" />
     <Compile Include="WindowResizeBehavior.cs" />

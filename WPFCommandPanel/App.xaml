@@ -105,7 +105,7 @@
                             <Button DockPanel.Dock="Right"  Style="{StaticResource WindowButton}" Command="{StaticResource CloseCommand}" CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}}">X</Button>
                         </StackPanel>
                     </Grid>
-                    <Border Grid.Row="1" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                    <Border Grid.Row="1" BorderBrush="DarkGray" BorderThickness="0 1 0 0 " Background="{TemplateBinding Background}">
                         <Grid>
                             <AdornerDecorator>
                                 <ContentPresenter x:Name="WindowContent"/>

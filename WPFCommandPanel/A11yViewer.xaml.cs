@@ -25,7 +25,7 @@ namespace WPFCommandPanel
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string dataDir = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+            string dataDir = MainWindow.panelOptions.JsonDataDir;
             string[] fileList = Directory.GetFiles(dataDir, "*" + SearchBox.Text + "*.json");
             var tabs = new ObservableCollection<MyTab>();
             foreach (var file in fileList)
@@ -62,7 +62,7 @@ namespace WPFCommandPanel
 
         private void Revert_Button_Click_1(object sender, RoutedEventArgs e)
         {
-            string dataDir = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+            string dataDir = MainWindow.panelOptions.JsonDataDir;
             var selectedTab = TabData.SelectedItem as MyTab;
             string json = "";
             using (StreamReader r = new StreamReader(System.IO.Path.Combine(dataDir, selectedTab.Header + ".json")))
@@ -81,7 +81,7 @@ namespace WPFCommandPanel
         private void RevertAll_Button_Click_1(object sender, RoutedEventArgs e)
         {
             var selected = TabData.SelectedItem as MyTab;
-            string dataDir = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+            string dataDir = MainWindow.panelOptions.JsonDataDir;
             string[] fileList = Directory.GetFiles(dataDir, "*" + SearchBox.Text + "*.json");
             var tabs = new ObservableCollection<MyTab>();
             foreach (var file in fileList)
@@ -104,7 +104,7 @@ namespace WPFCommandPanel
         }
         private void Save_Button_Click_2(object sender, RoutedEventArgs e)
         {
-            string dataDir = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+            string dataDir = MainWindow.panelOptions.JsonDataDir;
             var selectedTab = TabData.SelectedItem as MyTab;
             List<A11yData> toSave = new List<A11yData>(selectedTab.Data);
             using (StreamWriter file = new StreamWriter(System.IO.Path.Combine(dataDir, selectedTab.Header + ".json"), false))
@@ -118,7 +118,7 @@ namespace WPFCommandPanel
 
         private void SaveAll_Button_Click_2(object sender, RoutedEventArgs e)
         {
-            string dataDir = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+            string dataDir = MainWindow.panelOptions.JsonDataDir;
             foreach (var item in TabData.Items)
             {
                 var tab = item as MyTab;

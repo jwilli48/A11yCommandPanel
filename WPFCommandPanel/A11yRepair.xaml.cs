@@ -49,7 +49,7 @@ namespace WPFCommandPanel
                 string[] array = directory.Text.Split('\\');
                 string CourseName = array.Take(array.Length - 1).LastOrDefault();
                 Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-                openFileDialog.InitialDirectory = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+                openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
                 openFileDialog.FileName = "*" + CourseName + "*";
                 openFileDialog.Filter = "Json Files|*.json";
                 if(openFileDialog.ShowDialog() == true)
@@ -244,7 +244,22 @@ namespace WPFCommandPanel
         {
             SetCurrentNode();
         }
-
+        private void SaveFile()
+        {
+            if (curPage == null)
+            {               
+                return;
+            }
+            var newNode = HtmlNode.CreateNode(editor.Text);
+            curNode.ParentNode.ReplaceChild(newNode, curNode);
+            curNode = newNode;
+            int index = IssueGrid.SelectedIndex;
+            data[index].Completed = true;
+            curPage.Doc.Save(curPage.Location);
+            ViewSource.View.Refresh();
+            browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
+            browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");           
+        }
         private void editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
@@ -277,20 +292,7 @@ namespace WPFCommandPanel
                 }
                 if(e.Key == Key.Enter)
                 {
-                    if (curPage == null)
-                    {
-                        e.Handled = true;
-                        return;
-                    }
-                    var newNode = HtmlNode.CreateNode(editor.Text);
-                    curNode.ParentNode.ReplaceChild(newNode, curNode);
-                    curNode = newNode;
-                    int index = IssueGrid.SelectedIndex;
-                    data[index].Completed = true;
-                    curPage.Doc.Save(curPage.Location);
-                    ViewSource.View.Refresh();
-                    browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
-                    browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
+                    SaveFile();
                     e.Handled = true;
                 }
             }
@@ -300,7 +302,7 @@ namespace WPFCommandPanel
             string[] array = directory.Text.Split('\\');
             string CourseName = array.Take(array.Length - 1).LastOrDefault();
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-            openFileDialog.InitialDirectory = @"M:\DESIGNER\Content EditorsELTA\Accessibility Assistants\JSON_DATA\Accessibility";
+            openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
             openFileDialog.FileName = "*" + CourseName + "*";
             openFileDialog.Filter = "Json Files|*.json";
             if (openFileDialog.ShowDialog() == true)
@@ -340,20 +342,7 @@ namespace WPFCommandPanel
         }
         private void SaveIssue_Button(object sender, RoutedEventArgs e)
         {
-            if(curPage == null)
-            {
-                e.Handled = true;
-                return;
-            }
-            var newNode = HtmlNode.CreateNode(editor.Text);
-            curNode.ParentNode.ReplaceChild(newNode, curNode);
-            curNode = newNode;
-            int index = IssueGrid.SelectedIndex;
-            data[index].Completed = true;
-            curPage.Doc.Save(curPage.Location);
-            ViewSource.View.Refresh();
-            browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
-            browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
+            SaveFile();
             e.Handled = true;
         }
         private void Preview_Button(object sender, RoutedEventArgs e)
