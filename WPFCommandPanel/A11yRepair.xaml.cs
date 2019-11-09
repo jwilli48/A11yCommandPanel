@@ -290,10 +290,33 @@ namespace WPFCommandPanel
 
                     e.Handled = true;                    
                 }
-                if(e.Key == Key.Enter)
+                else if(e.Key == Key.Enter)
                 {
                     SaveFile();
                     e.Handled = true;
+                }
+                else if(e.Key == Key.NumPad2)
+                {
+                    if(data.Count <= IssueGrid.SelectedIndex + 1)
+                    {
+                        e.Handled = true;
+                    }else
+                    {
+                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex + 1;
+                        IssueGrid.UpdateLayout();
+                        IssueGrid.ScrollIntoView(IssueGrid.SelectedItem);
+                    }
+                }else if(e.Key == Key.NumPad8)
+                {
+                    if(IssueGrid.SelectedIndex == 0)
+                    {
+                        e.Handled = true;
+                    }else
+                    {
+                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex - 1;
+                        IssueGrid.UpdateLayout();
+                        IssueGrid.ScrollIntoView(IssueGrid.SelectedItem);
+                    }
                 }
             }
         }

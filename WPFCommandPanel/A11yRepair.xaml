@@ -388,7 +388,14 @@
                             <DataGridTextColumn Width="*" Header="Location" Binding="{Binding Location}"/>
                             <DataGridTextColumn Width="*" Header="Issue Type" Binding="{Binding IssueType}"/>
                             <DataGridTextColumn Width="*" Header="Descriptive Error" Binding="{Binding DescriptiveError}"/>
-                            <DataGridTextColumn Width="3*" Header="Notes" Binding="{Binding Notes}"/>
+                            <DataGridTextColumn Width="3*" Header="Notes" Binding="{Binding Notes}">
+                                <DataGridTextColumn.EditingElementStyle>
+                                    <Style TargetType="TextBox">
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                        <Setter Property="AcceptsReturn" Value="True"/>
+                                    </Style>
+                                </DataGridTextColumn.EditingElementStyle>
+                            </DataGridTextColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                     <Grid Grid.Row="1">
@@ -457,7 +464,7 @@
                                ShowLineNumbers="True"
                                WordWrap="True"
                                Grid.Row="0"
-                               KeyDown="editor_KeyDown"
+                               KeyDown="editor_KeyDown"                               
                                />
                 </Grid>
             </GroupBox>
