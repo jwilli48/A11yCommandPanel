@@ -209,7 +209,8 @@ namespace WPFCommandPanel
                 System.Windows.MessageBox.Show("Issue was not found, report data is old. You probably want to generate a new report.");
                 return;
             }
-            using (TidyManaged.Document my_doc = Document.FromString(curNode.OuterHtml))
+            MemoryStream str = new MemoryStream(Encoding.UTF8.GetBytes(curNode.OuterHtml));
+            using (TidyManaged.Document my_doc = Document.FromStream(str))
             {
                 my_doc.ShowWarnings = false;
                 my_doc.Quiet = true;
@@ -253,7 +254,8 @@ namespace WPFCommandPanel
             var newNode = HtmlNode.CreateNode(editor.Text);
             curNode.ParentNode.ReplaceChild(newNode, curNode);
             curNode = newNode;
-            int index = IssueGrid.SelectedIndex;
+            A11yData selectedItem = (A11yData)IssueGrid.SelectedItem;
+            var index = data.IndexOf(selectedItem);
             data[index].Completed = true;
             curPage.Doc.Save(curPage.Location);
             ViewSource.View.Refresh();
@@ -295,7 +297,7 @@ namespace WPFCommandPanel
                     SaveFile();
                     e.Handled = true;
                 }
-                else if(e.Key == Key.NumPad2)
+                else if(e.Key == Key.Down)
                 {
                     if(data.Count <= IssueGrid.SelectedIndex + 1)
                     {
@@ -303,10 +305,8 @@ namespace WPFCommandPanel
                     }else
                     {
                         IssueGrid.SelectedIndex = IssueGrid.SelectedIndex + 1;
-                        IssueGrid.UpdateLayout();
-                        IssueGrid.ScrollIntoView(IssueGrid.SelectedItem);
                     }
-                }else if(e.Key == Key.NumPad8)
+                }else if(e.Key == Key.Up)
                 {
                     if(IssueGrid.SelectedIndex == 0)
                     {
@@ -314,8 +314,6 @@ namespace WPFCommandPanel
                     }else
                     {
                         IssueGrid.SelectedIndex = IssueGrid.SelectedIndex - 1;
-                        IssueGrid.UpdateLayout();
-                        IssueGrid.ScrollIntoView(IssueGrid.SelectedItem);
                     }
                 }
             }
