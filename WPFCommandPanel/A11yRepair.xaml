@@ -409,7 +409,7 @@
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0"
                                 Margin="2"
-                                Click="Save_Button"
+                                Click="SaveReport_Button"
                                 Background="LightGray"
                                 Foreground="Black">
                             Save Json Report

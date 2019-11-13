@@ -30,9 +30,21 @@ namespace WPFCommandPanel
     /// </summary>
     public partial class A11yRepair : Page
     {
+        /// <summary>
+        /// Object to notify the DataGrid of issues that the data source has changed
+        /// </summary>
         public CollectionViewSource ViewSource { get; set; }
+        /// <summary>
+        /// Object to contain all the accessibility issue data
+        /// </summary>
         public ObservableCollection<A11yData> data { get; set; }
+        /// <summary>
+        /// Path of the current report being displayed in the DataGrid
+        /// </summary>
         public String curReportFile { get; set; }
+        /// <summary>
+        /// Inits the data sources and sets the datagrids itemsource
+        /// </summary>
         public A11yRepair()
         {
             InitializeComponent();
@@ -41,41 +53,66 @@ namespace WPFCommandPanel
             ViewSource.Source = this.data;
             IssueGrid.ItemsSource = ViewSource.View;
         }
-        
+
+        private void LoadCourse()
+        {
+            string[] array = directory.Text.Split('\\');
+            string CourseName = array.Take(array.Length - 1).LastOrDefault();
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
+            openFileDialog.FileName = "*" + CourseName + "*";
+            openFileDialog.Filter = "Json Files|*.json";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string json = "";
+                using (StreamReader r = new StreamReader(openFileDialog.FileName))
+                {
+                    json = r.ReadToEnd();
+                }
+                curReportFile = openFileDialog.FileName;
+                var tempdata = JsonConvert.DeserializeObject<ObservableCollection<A11yData>>(json);
+                data.Clear();
+                for (int i = tempdata.Count - 1; i >= 0; i--)
+                {
+                    if (tempdata[i].Location == null || tempdata[i].Location == "")
+                    {
+                        continue;
+                    }
+                    data.Add(tempdata[i]);
+                }
+                ViewSource.View.Refresh();
+            }
+        }
+        /// <summary>
+        /// Keydown event for the course path text box. 
+        /// Takes the input HTML directory and finds a matching JSON report for it.
+        /// User chooses which report to display.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Submit_TextBox(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if(e.Key == Key.Enter)
-            {                
-                string[] array = directory.Text.Split('\\');
-                string CourseName = array.Take(array.Length - 1).LastOrDefault();
-                Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-                openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
-                openFileDialog.FileName = "*" + CourseName + "*";
-                openFileDialog.Filter = "Json Files|*.json";
-                if(openFileDialog.ShowDialog() == true)
-                {
-                    string json = "";
-                    using (StreamReader r = new StreamReader(openFileDialog.FileName))
-                    {
-                        json = r.ReadToEnd();
-                    }
-                    curReportFile = openFileDialog.FileName;
-                    var tempdata = JsonConvert.DeserializeObject<ObservableCollection<A11yData>>(json);
-                    data.Clear();
-                    for(int i = tempdata.Count-1; i >= 0; i--)
-                    {      
-                        if(tempdata[i].Location == null || tempdata[i].Location == "")
-                        {
-                            continue;
-                        }
-                        data.Add(tempdata[i]);
-                    }
-                    ViewSource.View.Refresh();
-                }
+            {
+                LoadCourse();
             }
         }
+
+        /// <summary>
+        /// Event for search for report button, does the same as pressing enter in the text box.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Search_Button(object sender, RoutedEventArgs e)
+        {
+            LoadCourse();
+        }
+
+        /// <summary>
+        /// Contains the file path and an HTML dom object
+        /// </summary>
         public class DataToParse
-        {   //Object stored in the ReportParser objects that turns the html string from the CourseInfo object into a live HTML dom to be used by the parsers.
+        {   
             public DataToParse(string location)
             {
                 Location = location;
@@ -90,10 +127,23 @@ namespace WPFCommandPanel
             public string Location;
             public HtmlAgilityPack.HtmlDocument Doc;
         }
+        /// <summary>
+        /// Current page being displayed in the browser
+        /// </summary>
         private DataToParse curPage;
+
+        /// <summary>
+        /// Current node being edited. Should have a red box highlighting it in the browser
+        /// </summary>
         private HtmlNode curNode;
+
+        /// <summary>
+        /// Finds the current node based on the current selected issue
+        /// Uses an XPath selector that was saved when the report was generated
+        /// </summary>
         private void SetCurrentNode()
         {
+            // Get current selected issue
             A11yData row = (A11yData)IssueGrid.SelectedItem;
             if (row == null)
             {
@@ -103,7 +153,8 @@ namespace WPFCommandPanel
                 editor.Clear();
                 return;
             }
-            // TODO: Save on issue change
+
+            // Get issues HTML file
             var url = (directory.Text + "\\" + row.Location.Split('/').LastOrDefault());
             string html;
             using (StreamReader r = new StreamReader(url))
@@ -112,6 +163,8 @@ namespace WPFCommandPanel
             }
             curPage = new DataToParse(url);
 
+            // Find the issue in the page
+            // TODO: Simplify switch statement based on new XPath selector
             switch (row.IssueType)
             {
                 case "Link":
@@ -209,6 +262,8 @@ namespace WPFCommandPanel
                 System.Windows.MessageBox.Show("Issue was not found, report data is old. You probably want to generate a new report.");
                 return;
             }
+
+            // Use a stream as the TidyManaged.Document FromString method does not correctly use encoding.
             MemoryStream str = new MemoryStream(Encoding.UTF8.GetBytes(curNode.OuterHtml));
             using (TidyManaged.Document my_doc = Document.FromStream(str))
             {
@@ -227,6 +282,8 @@ namespace WPFCommandPanel
                 editor.Text = my_doc.Save();
                 editor.ScrollToHome();
             }
+
+            // Highlight the element
             var style = curNode.GetAttributeValue("style", "");
             if (style == "")
             {
@@ -238,13 +295,28 @@ namespace WPFCommandPanel
             }
             curNode.Id = "focus_this";
             curNode.SetAttributeValue("style", style);
+
+            // Reload HTML and scroll to the issue
             browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
             browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
         }
+
+        /// <summary>
+        /// SelectedCellsChanged event for DataGrid
+        /// Sets the current node to be the new selected cell
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void IssueGrid_Selected(object sender, SelectedCellsChangedEventArgs e)
         {
             SetCurrentNode();
         }
+
+        /// <summary>
+        /// Save the file.
+        /// Right now called with ctr-enter on editor, or clicking the save to file button.
+        /// Also reloads the HTML and scrolls to element (but element no longer has red border).
+        /// </summary>
         private void SaveFile()
         {
             if (curPage == null)
@@ -262,115 +334,15 @@ namespace WPFCommandPanel
             browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
             browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");           
         }
-        private void editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
-            {
-                if(e.Key == Key.S)
-                {
-                    if(curNode == null)
-                    {
-                        e.Handled = true;
-                        return;
-                    }
-                    var newNode = HtmlNode.CreateNode(editor.Text);
-                    var style = newNode.GetAttributeValue("style", "");
-                    if (style == "")
-                    {
-                        style = "border: 5px solid red";
-                    }
-                    else
-                    {
-                        style = "; border: 5px solid red;";
-                    }
-                    newNode.Id = "focus_this";
-                    newNode.SetAttributeValue("style", style);
-                    curNode.ParentNode.ReplaceChild(newNode, curNode);
-                    curNode = newNode;
-                    browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
-                    browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
 
-                    e.Handled = true;                    
-                }
-                else if(e.Key == Key.Enter)
-                {
-                    SaveFile();
-                    e.Handled = true;
-                }
-                else if(e.Key == Key.Down)
-                {
-                    if(data.Count <= IssueGrid.SelectedIndex + 1)
-                    {
-                        e.Handled = true;
-                    }else
-                    {
-                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex + 1;
-                    }
-                }else if(e.Key == Key.Up)
-                {
-                    if(IssueGrid.SelectedIndex == 0)
-                    {
-                        e.Handled = true;
-                    }else
-                    {
-                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex - 1;
-                    }
-                }
-            }
-        }
-        private void Search_Button(object sender, RoutedEventArgs e)
-        {
-            string[] array = directory.Text.Split('\\');
-            string CourseName = array.Take(array.Length - 1).LastOrDefault();
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-            openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
-            openFileDialog.FileName = "*" + CourseName + "*";
-            openFileDialog.Filter = "Json Files|*.json";
-            if (openFileDialog.ShowDialog() == true)
-            {
-                string json = "";
-                using (StreamReader r = new StreamReader(openFileDialog.FileName))
-                {
-                    json = r.ReadToEnd();
-                }
-                curReportFile = openFileDialog.FileName;
-                var tempdata = JsonConvert.DeserializeObject<ObservableCollection<A11yData>>(json);
-                data.Clear();
-                for (int i = tempdata.Count - 1; i >= 0; i--)
-                {
-                    if (tempdata[i].Location == null || tempdata[i].Location == "")
-                    {
-                        continue;
-                    }
-                    data.Add(tempdata[i]);
-                }
-                ViewSource.View.Refresh();
-            }
-        }
-        private void Save_Button(object sender, RoutedEventArgs e)
-        {         
-            if(curReportFile == null)
-            {
-                e.Handled = true;                
-                return;
-            }
-            using (StreamWriter file = new StreamWriter(System.IO.Path.Combine(curReportFile), false))
-            {
-                JsonSerializer serializer = new JsonSerializer();
-                serializer.Formatting = Formatting.Indented;
-                serializer.Serialize(file, data);
-            }
-        }
-        private void SaveIssue_Button(object sender, RoutedEventArgs e)
-        {
-            SaveFile();
-            e.Handled = true;
-        }
-        private void Preview_Button(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Function to save the current node, dispalying changes in the browser.
+        /// Does not actually save the HTML to the file.
+        /// </summary>
+        private void SaveNode()
         {
             if (curNode == null)
             {
-                e.Handled = true;
                 return;
             }
             var newNode = HtmlNode.CreateNode(editor.Text);
@@ -389,15 +361,111 @@ namespace WPFCommandPanel
             curNode = newNode;
             browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
             browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
+        }
+
+        /// <summary>
+        /// Key down event for the editor
+        /// ctrl-s will save node (preview)
+        /// ctrl-enter will save to file + check the issue as completed
+        /// ctrl-NumPad2 move down one issue in datagrid
+        /// ctrl-Numpad8 move up one issue in datagrid
+        /// TODO: make timer for how fast issues can be moved. Currently moves to fast
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            {
+                if(e.Key == Key.S)
+                {
+                    SaveNode();
+                    e.Handled = true;                    
+                }
+                else if(e.Key == Key.Enter)
+                {
+                    SaveFile();
+                    e.Handled = true;
+                }
+                else if(e.Key == Key.NumPad2)
+                {
+                    if(data.Count <= IssueGrid.SelectedIndex + 1)
+                    {
+                        e.Handled = true;
+                    }else
+                    {
+                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex + 1;
+                    }
+                }else if(e.Key == Key.NumPad8)
+                {
+                    if(IssueGrid.SelectedIndex == 0)
+                    {
+                        e.Handled = true;
+                    }else
+                    {
+                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex - 1;
+                    }
+                }
+            }
+        }        
+
+        /// <summary>
+        /// Saves the JSON report. 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SaveReport_Button(object sender, RoutedEventArgs e)
+        {         
+            if(curReportFile == null)
+            {
+                e.Handled = true;                
+                return;
+            }
+            using (StreamWriter file = new StreamWriter(System.IO.Path.Combine(curReportFile), false))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+                serializer.Formatting = Formatting.Indented;
+                serializer.Serialize(file, data);
+            }
+        }
+
+        /// <summary>
+        /// Save To File button click event. Saves the code changes to the HTML file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void SaveIssue_Button(object sender, RoutedEventArgs e)
+        {
+            SaveFile();
             e.Handled = true;
         }
 
+        /// <summary>
+        /// Saves the changes to the current node and displayes in browser. Does not save to the HTML file.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Preview_Button(object sender, RoutedEventArgs e)
+        {
+            SaveNode();
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Resets any changes to the file by reloading it from the HTML file directly.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void RefreshNode_Button(object sender, RoutedEventArgs e)
         {
             SetCurrentNode();
         }
 
-        
+        /// <summary>
+        /// Images do not properly display. This button will display an image if the current issue is an <img/> tag.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void OpenImage_Button(object sender, RoutedEventArgs e)
         {
             if(curNode?.Name != "img")
@@ -423,6 +491,12 @@ namespace WPFCommandPanel
             }
         }
 
+        /// <summary>
+        /// Opens the full HTML of the page the current issue is on.
+        /// Scrolls the editor to the code for that issue as well.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void OpenHTML_Button(object sender, RoutedEventArgs e)
         {
             if (curPage == null)
@@ -484,6 +558,12 @@ namespace WPFCommandPanel
             curNode = curPage.Doc.DocumentNode.SelectSingleNode("//body");
         }
 
+        /// <summary>
+        /// Saves the JSON report everytime an issue is marked as compelted or marked as not completed.
+        /// TODO: Combine code with SaveReport event.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void CheckBox_Changed(object sender, RoutedEventArgs e)
         {
             if (curReportFile == null)

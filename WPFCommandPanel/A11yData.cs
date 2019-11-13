@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace My
 {
+    /// <summary>
+    /// Object for the DataGrid. Mathces a single row in an accessibility ARC report.
+    /// </summary>
     public class A11yData
     {
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
