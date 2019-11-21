@@ -23,5 +23,7 @@ namespace My
         private bool Completed2 { get { return Completed; } set { Completed = value; } }
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string html { get; set; }
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string url { get; set; }
     }
 }
