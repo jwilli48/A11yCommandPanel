@@ -22,6 +22,10 @@ using My.StringExtentions;
 using System.Text;
 using System.Windows.Media.Imaging;
 using System.Windows.Controls.Primitives;
+using ReportGenerators;
+using System.ComponentModel;
+using My.CanvasApi;
+using System.Threading.Tasks;
 
 namespace WPFCommandPanel
 {
@@ -42,6 +46,7 @@ namespace WPFCommandPanel
         /// Path of the current report being displayed in the DataGrid
         /// </summary>
         public String curReportFile { get; set; }
+        private System.Diagnostics.Stopwatch MoveGridRowTimer = new System.Diagnostics.Stopwatch();
         /// <summary>
         /// Inits the data sources and sets the datagrids itemsource
         /// </summary>
@@ -52,36 +57,83 @@ namespace WPFCommandPanel
             this.ViewSource = new CollectionViewSource();
             ViewSource.Source = this.data;
             IssueGrid.ItemsSource = ViewSource.View;
+            MoveGridRowTimer.Start();
         }
-
-        private void LoadCourse()
+        private CourseInfo course;
+        Boolean isCanvas = false;
+        private void LoadCourse(object sender, DoWorkEventArgs e)
         {
-            string[] array = directory.Text.Split('\\');
-            string CourseName = array.Take(array.Length - 1).LastOrDefault();
+            this.Dispatcher.Invoke(() =>
+            {
+                var template = MainWindow.AppWindow.Template;
+                var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
+                control.Visibility = Visibility.Visible;
+            });
+
+            // if its a canvas course
+            string CourseName;
+            var text = this.Dispatcher.Invoke(() =>
+            {
+                return directory.Text;
+            });
+            if (int.TryParse(text, out int course_id))
+            {                       
+                if(CanvasApi.CurrentDomain == null || CanvasApi.CurrentDomain == "")
+                {
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        System.Windows.MessageBox.Show("No domain chosen.");
+                    });
+                    return;
+                }
+                var temp_course = new CourseInfo(course_id);
+                this.Dispatcher.Invoke(() => course = temp_course);
+                CourseName = temp_course.CourseName;
+                isCanvas = true;
+            }else
+            {
+                string[] array = text.Split('\\');
+                CourseName = array.Take(array.Length - 1).LastOrDefault();
+                isCanvas = false;
+            }
+            
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
             openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
             openFileDialog.FileName = "*" + CourseName + "*";
             openFileDialog.Filter = "Json Files|*.json";
             if (openFileDialog.ShowDialog() == true)
-            {
-                string json = "";
-                using (StreamReader r = new StreamReader(openFileDialog.FileName))
+            {                
+                this.Dispatcher.Invoke(() =>
                 {
-                    json = r.ReadToEnd();
-                }
-                curReportFile = openFileDialog.FileName;
-                var tempdata = JsonConvert.DeserializeObject<ObservableCollection<A11yData>>(json);
-                data.Clear();
-                for (int i = tempdata.Count - 1; i >= 0; i--)
-                {
-                    if (tempdata[i].Location == null || tempdata[i].Location == "")
+                    string json = "";
+                    using (StreamReader r = new StreamReader(openFileDialog.FileName))
                     {
-                        continue;
+                        json = r.ReadToEnd();
                     }
-                    data.Add(tempdata[i]);
-                }
-                ViewSource.View.Refresh();
-            }
+                    curReportFile = openFileDialog.FileName;
+                    var tempdata = JsonConvert.DeserializeObject<ObservableCollection<A11yData>>(json);
+                    data.Clear();
+                    for (int i = tempdata.Count - 1; i >= 0; i--)
+                    {
+                        if (tempdata[i].Location == null || tempdata[i].Location == "")
+                        {
+                            continue;
+                        }
+                        data.Add(tempdata[i]);
+                    }
+                    ViewSource.View.Refresh();
+                });                
+            }            
+        }
+        private void LoadCourseFinished(object sender, RunWorkerCompletedEventArgs e)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                var template = MainWindow.AppWindow.Template;
+                var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
+                control.Visibility = Visibility.Hidden;
+            });
+            return;
         }
         /// <summary>
         /// Keydown event for the course path text box. 
@@ -94,7 +146,13 @@ namespace WPFCommandPanel
         {
             if(e.Key == Key.Enter)
             {
-                LoadCourse();
+                BackgroundWorker worker = new BackgroundWorker
+                {
+                    WorkerReportsProgress = true
+                };
+                worker.DoWork += LoadCourse;
+                worker.RunWorkerCompleted += LoadCourseFinished;
+                worker.RunWorkerAsync();
             }
         }
 
@@ -105,7 +163,13 @@ namespace WPFCommandPanel
         /// <param name="e"></param>
         private void Search_Button(object sender, RoutedEventArgs e)
         {
-            LoadCourse();
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
+            worker.DoWork += LoadCourse;
+            worker.RunWorkerCompleted += LoadCourseFinished;
+            worker.RunWorkerAsync();
         }
 
         /// <summary>
@@ -124,6 +188,12 @@ namespace WPFCommandPanel
                 Location = location;
                 Doc = doc;
             }
+            public DataToParse(string location, string html)
+            {
+                Location = location;
+                Doc = new HtmlAgilityPack.HtmlDocument();
+                Doc.LoadHtml(html);
+            }
             public string Location;
             public HtmlAgilityPack.HtmlDocument Doc;
         }
@@ -136,7 +206,7 @@ namespace WPFCommandPanel
         /// Current node being edited. Should have a red box highlighting it in the browser
         /// </summary>
         private HtmlNode curNode;
-
+        private Dictionary<string, CourseInfo.ItemInfo> curCanvasItem;
         /// <summary>
         /// Finds the current node based on the current selected issue
         /// Uses an XPath selector that was saved when the report was generated
@@ -144,7 +214,15 @@ namespace WPFCommandPanel
         private void SetCurrentNode()
         {
             // Get current selected issue
-            A11yData row = (A11yData)IssueGrid.SelectedItem;
+            A11yData row;
+            try
+            {
+                row = (A11yData)IssueGrid.SelectedItem;
+            }catch
+            {
+                return;
+            }
+            
             if (row == null)
             {
                 browser.Url = "";
@@ -155,13 +233,30 @@ namespace WPFCommandPanel
             }
 
             // Get issues HTML file
-            var url = (directory.Text + "\\" + row.Location.Split('/').LastOrDefault());
-            string html;
-            using (StreamReader r = new StreamReader(url))
+            if(isCanvas)
             {
-                html = r.ReadToEnd();
+                var pageInfo = course.PageInfoList.Where(item => item.Keys.Count(loc => loc.Contains(row.Location.CleanSplit("?").FirstOrDefault())) > 0).FirstOrDefault();
+                string question_id = row.Location.CleanSplit("?").LastOrDefault().CleanSplit("&").FirstOrDefault().CleanSplit("=").LastOrDefault();
+                if(!row.Location.Contains("question_num"))
+                {
+                    question_id = "";
+                }
+                string answer_id = row.Location.CleanSplit("?").LastOrDefault().CleanSplit("&").LastOrDefault().CleanSplit("=").LastOrDefault();
+                if(!row.Location.Contains("answer_num"))
+                {
+                    answer_id = "";
+                }
+                bool comment = row.Location.Contains("answer_comment");
+                var location = pageInfo.Keys.ElementAt(0);
+                curCanvasItem = pageInfo;
+                curPage = new DataToParse(location, curCanvasItem[location].getContent(question_id,answer_id, comment));
+            }else
+            {
+                var url = (directory.Text + "\\" + row.Location.Split('/').LastOrDefault());
+                curPage = new DataToParse(url);
             }
-            curPage = new DataToParse(url);
+
+            
 
             // Find the issue in the page
             // TODO: Simplify switch statement based on new XPath selector
@@ -291,7 +386,7 @@ namespace WPFCommandPanel
             }
             else
             {
-                style = "; border: 5px solid red;";
+                style += "; border: 5px solid red;";
             }
             curNode.Id = "focus_this";
             curNode.SetAttributeValue("style", style);
@@ -329,7 +424,33 @@ namespace WPFCommandPanel
             A11yData selectedItem = (A11yData)IssueGrid.SelectedItem;
             var index = data.IndexOf(selectedItem);
             data[index].Completed = true;
-            curPage.Doc.Save(curPage.Location);
+            if(isCanvas)
+            {
+                string location = curCanvasItem.Keys.ElementAt(0);
+                int pageInfoIndex = course.PageInfoList.IndexOf(curCanvasItem);
+                string question_id = selectedItem.Location.CleanSplit("?").LastOrDefault().CleanSplit("&").FirstOrDefault().CleanSplit("=").LastOrDefault();
+                if (!selectedItem.Location.Contains("question_num"))
+                {
+                    question_id = "";
+                }
+                string answer_id = selectedItem.Location.CleanSplit("?").LastOrDefault().CleanSplit("&").LastOrDefault().CleanSplit("=").LastOrDefault();
+                if (!selectedItem.Location.Contains("answer_num"))
+                {
+                    answer_id = "";
+                }
+                bool comment = selectedItem.Location.Contains("answer_comment");
+                course.PageInfoList[pageInfoIndex][location] = curCanvasItem[location]
+                    .SaveContent(course.CourseIdOrPath, 
+                        curPage.Doc.DocumentNode.OuterHtml,
+                        question_id,
+                        answer_id,
+                        comment
+                        );
+            }
+            else
+            {
+                curPage.Doc.Save(curPage.Location);
+            }            
             ViewSource.View.Refresh();
             browser.LoadHtmlAndWait(curPage.Doc.DocumentNode.OuterHtml);
             browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");           
@@ -353,7 +474,7 @@ namespace WPFCommandPanel
             }
             else
             {
-                style = "; border: 5px solid red;";
+                style += "; border: 5px solid red;";
             }
             newNode.Id = "focus_this";
             newNode.SetAttributeValue("style", style);
@@ -363,6 +484,7 @@ namespace WPFCommandPanel
             browser.QueueScriptCall($"var el = document.getElementById('focus_this'); el.scrollIntoView({{behavior: 'smooth' , block: 'center', inline: 'center'}});");
         }
 
+        
         /// <summary>
         /// Key down event for the editor
         /// ctrl-s will save node (preview)
@@ -375,7 +497,8 @@ namespace WPFCommandPanel
         /// <param name="e"></param>
         private void editor_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if(Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
+            
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl))
             {
                 if(e.Key == Key.S)
                 {
@@ -394,7 +517,11 @@ namespace WPFCommandPanel
                         e.Handled = true;
                     }else
                     {
-                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex + 1;
+                        if(MoveGridRowTimer.ElapsedMilliseconds > 300)
+                        {
+                            MoveGridRowTimer.Restart();
+                            IssueGrid.SelectedIndex = IssueGrid.SelectedIndex + 1;
+                        }                       
                     }
                 }else if(e.Key == Key.NumPad8)
                 {
@@ -403,7 +530,11 @@ namespace WPFCommandPanel
                         e.Handled = true;
                     }else
                     {
-                        IssueGrid.SelectedIndex = IssueGrid.SelectedIndex - 1;
+                        if (MoveGridRowTimer.ElapsedMilliseconds > 300)
+                        {
+                            MoveGridRowTimer.Restart();
+                            IssueGrid.SelectedIndex = IssueGrid.SelectedIndex - 1;
+                        }
                     }
                 }
             }
@@ -485,7 +616,7 @@ namespace WPFCommandPanel
                 ImagePopUp.Height = bitmap.Height + 6;
                 ImagePopUp.DisplayImage.Source = bitmap;
             }
-            catch (Exception ex)
+            catch
             {
                 System.Windows.MessageBox.Show($"Error opening the image at {imagePath}");
             }
@@ -577,6 +708,12 @@ namespace WPFCommandPanel
                 serializer.Formatting = Formatting.Indented;
                 serializer.Serialize(file, data);
             }
+        }
+
+        private void OpenInBrowser(object sender, RoutedEventArgs e)
+        {
+            A11yData selectedItem = (A11yData)IssueGrid.SelectedItem;
+            System.Diagnostics.Process.Start(selectedItem.url);
         }
     }
 }
