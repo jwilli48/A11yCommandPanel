@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
+using My.CanvasApi;
 
 namespace WPFCommandPanel
 {
@@ -47,7 +48,7 @@ namespace WPFCommandPanel
             a11YViewer = new A11yViewer();
             a11YRepair = new A11yRepair();
             optionsPage = new OptionsPage();            
-            ShowPage.Navigate(CommandPanelObj);
+            ShowPage.Navigate(CommandPanelObj);            
         }
 
         private void SwitchA11yReview(object sender, RoutedEventArgs e)
@@ -67,6 +68,21 @@ namespace WPFCommandPanel
         private void SwitchOptions(object sender, RoutedEventArgs e)
         {
             ShowPage.Navigate(optionsPage);
+        }
+
+        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            var radiobutton = sender as RadioButton;
+
+            CanvasApi.ChangeDomain(radiobutton.Content.ToString());
+            this.Dispatcher.Invoke(() =>
+            {
+                Run run = new Run($"Domain changed to {radiobutton.Content.ToString()}\n")
+                {
+                    Foreground = System.Windows.Media.Brushes.Green
+                };
+                CommandPanelObj.TerminalOutput.Inlines.Add(run);
+            });
         }
     }
 }

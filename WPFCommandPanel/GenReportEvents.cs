@@ -34,14 +34,21 @@ namespace WPFCommandPanel
                     Foreground = System.Windows.Media.Brushes.Cyan
                 };
                 TerminalOutput.Inlines.Add(run);
+                var template = MainWindow.AppWindow.Template;
+                var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
+                control.Visibility = Visibility.Hidden;
             });
         }
         private void CreateReport(object sender, DoWorkEventArgs e)
         {
             try
             {
-
-
+                this.Dispatcher.Invoke(() =>
+                {
+                    var template = MainWindow.AppWindow.Template;
+                    var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
+                    control.Visibility = Visibility.Visible;
+                });
                 var s = new System.Diagnostics.Stopwatch();
                 s.Start();
                 this.Dispatcher.Invoke(() =>
@@ -53,16 +60,7 @@ namespace WPFCommandPanel
                     TerminalOutput.Inlines.Add(run);
                 });
 
-                var checkedDomain = this.Dispatcher.Invoke(() =>
-                {
-                    var domain = RadioButtonGroup?.Children?.OfType<RadioButton>()
-                    ?.FirstOrDefault(r => r.IsChecked == true)
-                    ?.Content
-                    ?.ToString();
-                    return domain;
-                });
-
-                if (checkedDomain == null)
+                if (CanvasApi.CurrentDomain == null || CanvasApi.CurrentDomain == "")
                 {
                     this.Dispatcher.Invoke(() =>
                     {
@@ -82,15 +80,6 @@ namespace WPFCommandPanel
                     });
                     return;
                 }
-                CanvasApi.ChangeDomain(checkedDomain);
-                this.Dispatcher.Invoke(() =>
-                {
-                    Run run = new Run($"Domain changed to {checkedDomain}\n")
-                    {
-                        Foreground = System.Windows.Media.Brushes.Green
-                    };
-                    TerminalOutput.Inlines.Add(run);
-                });
 
                 CourseInfo course;
                 bool directory = false;
@@ -98,6 +87,14 @@ namespace WPFCommandPanel
                 if (int.TryParse(text, out int id))
                 {
                     //It is an ID, create course info with new id var
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        Run run = new Run($"Loading canvas information\n")
+                        {
+                            Foreground = System.Windows.Media.Brushes.Green
+                        };
+                        TerminalOutput.Inlines.Add(run);
+                    });
                     course = new CourseInfo(id);
                 }
                 else
@@ -151,7 +148,7 @@ namespace WPFCommandPanel
                 });
                 A11yParser ParseForA11y = new A11yParser();
                 MediaParser ParseForMedia = new MediaParser();
-                var options = new ParallelOptions { MaxDegreeOfParallelism = 1 };
+                var options = new ParallelOptions { MaxDegreeOfParallelism = -1 };
                 Parallel.ForEach(course.PageHtmlList, options, page =>
                 {
                     ParseForA11y.ProcessContent(page);

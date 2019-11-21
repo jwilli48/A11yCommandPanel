@@ -125,7 +125,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="125"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Button Grid.Column="1" 
                             Content="Generate Report" 
@@ -135,35 +135,6 @@
                             Height="25" 
                             VerticalAlignment="Top"
                             Click="GenerateReport_Click"/>
-                        <Grid Grid.Column="0" 
-                              Name="RadioButtonGroup">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <RadioButton VerticalAlignment="Center" 
-                                     Grid.Row="0" 
-                                     Margin="10 0 0 0" 
-                                     GroupName="Domain" 
-                                     Content="BYU Online"/>
-                            <RadioButton VerticalAlignment="Center" 
-                                     Grid.Row="1" 
-                                     Margin="10 0 0 0"       
-                                     GroupName="Domain" 
-                                     Content="BYU IS Test"/>
-                            <RadioButton VerticalAlignment="Center" 
-                                     Grid.Row="2" 
-                                     Margin="10 0 0 0" 
-                                     GroupName="Domain" 
-                                     Content="BYU Master Courses"/>
-                            <RadioButton VerticalAlignment="Center" 
-                                     Grid.Row="3" 
-                                     Margin="10 0 0 0" 
-                                     GroupName="Domain" 
-                                     Content="Directory"/>
-                        </Grid>
 
                     </Grid>
                     <Grid>

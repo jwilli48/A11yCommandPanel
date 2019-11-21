@@ -78,14 +78,15 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="75"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0"                                            
+                        <local:LoadingSpinner Grid.Column="0" Height="12" Width="12" x:Name="spinner" Visibility="Hidden" Margin="0 0 0 7"/>
+                        <!--<Label Grid.Column="0"                                            
                                     sw:ControlDoubleClickBehavior.ExecuteCommand="{StaticResource CloseCommand}"                                                
                                     sw:ControlDoubleClickBehavior.ExecuteCommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}}" Padding="0">
                             <Image DockPanel.Dock="Left" Style="{StaticResource WindowIcon}" Source="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}},Path=Icon}"                                          
                                     Width="16"                                            
                                     sw:ShowSystemMenuBehavior.TargetWindow="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Window}}}"                                            
                                     sw:ShowSystemMenuBehavior.LeftButtonShowAt="{Binding ElementName=WindowContent}"/>
-                        </Label>
+                        </Label> -->
                         <Label Grid.Column="1" DockPanel.Dock="Left" Content="{TemplateBinding Property=Title}" Padding="3,0,0,0"                                                                                   
                                     HorizontalContentAlignment="Center" 
                                     VerticalContentAlignment="Center" 

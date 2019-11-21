@@ -122,6 +122,9 @@
     </Compile>
     <Compile Include="FileWatcherEvents.cs" />
     <Compile Include="GenReportEvents.cs" />
+    <Compile Include="LoadingSpinner.xaml.cs">
+      <DependentUpon>LoadingSpinner.xaml</DependentUpon>
+    </Compile>
     <Compile Include="MyTab.cs" />
     <Compile Include="OptionsPage.xaml.cs">
       <DependentUpon>OptionsPage.xaml</DependentUpon>
@@ -147,6 +150,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="DraggablePopup.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LoadingSpinner.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
