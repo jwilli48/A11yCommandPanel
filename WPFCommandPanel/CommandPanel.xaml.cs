@@ -121,7 +121,12 @@ namespace WPFCommandPanel
             {
                 //I was to lazy to rewrite the function into c# and just import the POSH script.
                 string script = File.ReadAllText(MainWindow.panelOptions.PowershellScriptDir + "\\MoveReports.ps1");
-                posh.AddScript(script);
+                script = "param($ReportPath, $BaseDestination, $N_DriveBase, $email)process{\n" + script + "\n}";
+                posh.AddScript(script)
+                    .AddArgument(MainWindow.panelOptions.ReportPath)
+                    .AddArgument(MainWindow.panelOptions.BaseExcelArchive)
+                    .AddArgument(MainWindow.panelOptions.BaseMoveReportsDir)
+                    .AddArgument(MainWindow.panelOptions.A11yEmail);
                 Collection<PSObject> results = posh.Invoke();
                 foreach(var obj in results)
                 {
@@ -165,7 +170,7 @@ namespace WPFCommandPanel
             var script = File.ReadAllText(MainWindow.panelOptions.PowershellScriptDir + @"\FindReplace.ps1");
             script = "param($path)process{\n" + script + "\n}";
             var posh = PowerShell.Create();
-            posh.AddScript(script).AddArgument(file_path);
+            posh.AddScript(script).AddArgument(file_path).AddArgument(MainWindow.panelOptions.CourseBackupDir);
             posh.Invoke();
 
             Dispatcher.Invoke(() =>

@@ -109,9 +109,9 @@ namespace WPFCommandPanel
                         TerminalOutput.Inlines.Add(run);
                     });
                     var script = File.ReadAllText(MainWindow.panelOptions.PowershellScriptDir + @"\FindReplace.ps1");
-                    script = "param($path)process{\n" + script + "\n}";
+                    script = "param($path, $backupDir)process{\n" + script + "\n}";
                     var posh = PowerShell.Create();
-                    posh.AddScript(script).AddArgument(text);
+                    posh.AddScript(script).AddArgument(text).AddArgument(MainWindow.panelOptions.CourseBackupDir);
                     posh.Invoke();
                     Dispatcher.Invoke(() =>
                     {
