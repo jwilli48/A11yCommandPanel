@@ -179,7 +179,7 @@ namespace WPFCommandPanel
                         HighScoreBox.Text = "HighScore: " + File.ReadAllText(MainWindow.panelOptions.HighScorePath);
                     });
                 }
-
+                MainWindow.a11YRepair.SetCourse(course);
                 e.Result = $"Report generated.\nTime taken: {s.Elapsed.ToString(@"hh\:mm\:ss")} for {course.PageHtmlList.Count()} pages\n";
             }catch(Exception ex)
             {
