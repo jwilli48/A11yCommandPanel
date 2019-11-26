@@ -26,6 +26,7 @@ using ReportGenerators;
 using System.ComponentModel;
 using My.CanvasApi;
 using System.Threading.Tasks;
+using OfficeOpenXml;
 
 namespace WPFCommandPanel
 {
@@ -60,6 +61,10 @@ namespace WPFCommandPanel
             MoveGridRowTimer.Start();
         }
         private CourseInfo course;
+        public void SetCourse(CourseInfo new_course)
+        {
+            course = new_course;
+        }
         Boolean isCanvas = false;
         private void LoadCourse(object sender, DoWorkEventArgs e)
         {
@@ -86,9 +91,20 @@ namespace WPFCommandPanel
                     });
                     return;
                 }
-                var temp_course = new CourseInfo(course_id);
-                this.Dispatcher.Invoke(() => course = temp_course);
-                CourseName = temp_course.CourseName;
+                CourseInfo temp_course;
+                if(course == null || course.CourseIdOrPath != course_id)
+                {
+                    temp_course = new CourseInfo(course_id);
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        course = temp_course;
+                    });
+                }else
+                {
+                    temp_course = course;
+                }                
+                
+                CourseName = temp_course.CourseCode;
                 isCanvas = true;
             }else
             {
@@ -99,7 +115,7 @@ namespace WPFCommandPanel
             
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
             openFileDialog.InitialDirectory = MainWindow.panelOptions.JsonDataDir;
-            openFileDialog.FileName = "*" + CourseName + "*";
+            openFileDialog.FileName = "*" + CourseName.CleanSplit('-').FirstOrDefault() + "*";
             openFileDialog.Filter = "Json Files|*.json";
             if (openFileDialog.ShowDialog() == true)
             {                
@@ -133,7 +149,6 @@ namespace WPFCommandPanel
                 var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
                 control.Visibility = Visibility.Hidden;
             });
-            return;
         }
         /// <summary>
         /// Keydown event for the course path text box. 
@@ -223,7 +238,7 @@ namespace WPFCommandPanel
                 return;
             }
             
-            if (row == null)
+            if (row == null || row.Location == null)
             {
                 browser.Url = "";
                 curPage = null;
@@ -423,7 +438,7 @@ namespace WPFCommandPanel
             curNode = newNode;
             A11yData selectedItem = (A11yData)IssueGrid.SelectedItem;
             var index = data.IndexOf(selectedItem);
-            data[index].Completed = true;
+            data[index].Completed = !data[index].Completed;
             if(isCanvas)
             {
                 string location = curCanvasItem.Keys.ElementAt(0);
@@ -714,6 +729,53 @@ namespace WPFCommandPanel
         {
             A11yData selectedItem = (A11yData)IssueGrid.SelectedItem;
             System.Diagnostics.Process.Start(selectedItem.url);
+        }
+
+
+        private void SyncToExcel(object sender, DoWorkEventArgs e)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                var template = MainWindow.AppWindow.Template;
+                var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
+                control.Visibility = Visibility.Visible;
+            });
+            string excelPath = MainWindow.panelOptions.ReportPath + "\\" + Path.GetFileNameWithoutExtension(curReportFile) + ".xlsx";
+            ExcelPackage Excel = new ExcelPackage(new FileInfo(excelPath));
+            ExcelRange cells = Excel.Workbook.Worksheets[1].Cells;
+            int rowNumber = 9;
+            int curDataItem = data.Count() - 1;
+            while (cells[rowNumber, 2].Value != null && (String)cells[rowNumber, 2].Value != "")
+            {
+                if(curDataItem < 0)
+                {
+                    break;
+                }
+                cells[rowNumber, 2].Value = data[curDataItem].Completed ? "Complete" : "Not Started";
+                curDataItem--;
+                rowNumber++;
+            }
+            Excel.Save();
+            Excel.Dispose();
+        }
+        private void SyncToExcelFinish(object sender, RunWorkerCompletedEventArgs e)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                var template = MainWindow.AppWindow.Template;
+                var control = (LoadingSpinner)template.FindName("spinner", MainWindow.AppWindow);
+                control.Visibility = Visibility.Hidden;
+            });
+        }
+        private void SyncToExcel(object sender, RoutedEventArgs e)
+        {
+            BackgroundWorker worker = new BackgroundWorker
+            {
+                WorkerReportsProgress = true
+            };
+            worker.DoWork += SyncToExcel;
+            worker.RunWorkerCompleted += LoadCourseFinished;
+            worker.RunWorkerAsync();
         }
     }
 }
